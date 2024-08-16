@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Price History</title>
+    <style>
+        /* 样式部分 */
+        body {
+            font-family: Arial, sans-serif;
+        }
+        nav {
+            background-color: #f2f2f2;
+            padding: 10px;
+            text-align: center;
+        }
+        nav a {
+            margin: 0 15px;
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        nav a:hover {
+            color: #007bff;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .pagination a {
+            color: black;
+            padding: 8px 16px;
+            text-decoration: none;
+            border: 1px solid #ddd;
+            margin: 0 4px;
+        }
+        .pagination a.active {
+            background-color: #4CAF50;
+            color: white;
+            border: 1px solid #4CAF50;
+        }
+        .pagination a:hover:not(.active) {
+            background-color: #ddd;
+        
+        }
+        .search-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .search-container select {
+            padding: 8px;
+            width: 320px; /* Adjusted to accommodate the dropdown arrow */
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff; /* Ensures the background is white */
+            -webkit-appearance: none; /* Removes the default dropdown styling in WebKit browsers */
+            -moz-appearance: none; /* Removes the default dropdown styling in Firefox */
+            appearance: none; /* Removes the default dropdown styling in modern browsers */
+        }
+        .search-container input[type="text"] {
+            padding: 8px;
+            width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .search-container button {
+            padding: 8px 12px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .search-container button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}">Market</a>
+        <a href="{{ url_for('stock_price_history') }}">Stock</a>
+    </nav>
+
+    <h1>Stock Price History</h1>
+    
+    <div class="search-container">       
+        <form id="search-form" method="get" action="/stock_price_history">
+
+            <label for="start_date">Start Date:</label>
+            <input type="date" id="start_date" name="start_date" value="{{ request.args.get('start_date') }}">
+
+            <label for="end_date">End Date:</label>
+            <input type="date" id="end_date" name="end_date" value="{{ request.args.get('end_date') }}">
+
+            <select name="index">
+                <option value="">all</option>
+                <option value="csindex_800" {% if request.args.get('index') == 'csindex_800' %}selected{% endif %}>csindex 800</option>
+            </select>
+
+            <select id="industry_level_1" name="industry_level_1">
+                <option value="">All</option>
+                {% for name in industry_level_1_names %}
+                    <option value="{{ name }}" {% if name == request.args.get('industry_level_1') %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+
+            <input type="text" name="stock_name" placeholder="Stock Name" value="{{ request.args.get('stock_name', '') }}">
+
+            <button type="submit">Search</button>
+            <button type="button" onclick="clearForm()">Clear</button> <!-- 清空条件按钮 -->
+        </form>
+    </div>
+
+    <script>
+    function clearForm() {
+        // 重置表单，清空所有字段
+        document.getElementById("search-form").reset(); 
+
+        // 手动清除 industry_level_1 的选中项
+        document.getElementById("industry_level_1").selectedIndex = 0;
+    }
+    </script>
+
+
+    <!-- stock_price_history.html -->
+    <table>
+        <thead>
+            <tr>
+                <th>日期</th>
+                <th>一级行业</th>
+                <th>二级行业</th>
+                <th>三级行业</th>
+                <th>四级行业</th>
+                <th>代码</th>
+                <th>名称</th>
+                <th>open</th>
+                <th>close</th>
+                <th>涨跌</th>
+                <th>MA_20</th>
+                <th>ATR</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for index, row in stock_prices %}
+            <tr>
+                <td>{{ row['date'] }}</td>
+                <td>{{ row['industry_level_1_name'] }}</td>
+                <td>{{ row['industry_level_2_name'] }}</td>
+                <td>{{ row['industry_level_3_name'] }}</td>
+                <td>{{ row['industry_level_4_name'] }}</td>
+                <td>{{ row['stock_code'] }}</td>
+                <td>{{ row['stock_name'] }}</td>
+                <td>{{ row['open'] }}</td>
+                <td>{{ row['close'] }}</td>
+                <td style="background-color: {% if row['price_change_percentage'] > 0 %}rgba(255, 0, 0, {{ row['price_change_percentage']/10  }}){% elif row['price_change_percentage'] < 0 %}rgba(0, 128, 0, {{ -row['price_change_percentage']/10  }}){% else %}white{% endif %};">
+                    {{ '%.2f' | format(row['price_change_percentage']) }}%
+                </td>
+                <td>{{ row['20_day_ma'] }}</td>
+                <td>{{ row['ATR'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+<!-- 添加分页控制 -->
+<!-- 添加分页控制 -->
+    <div class="pagination">
+        <ul class="pagination">
+            {% if current_page > 1 %}
+                <li><a href="?page={{ current_page - 1 }}&industry_level_1={{ request.args.get('industry_level_1') }}&stock_name={{ request.args.get('stock_name') }}&start_date={{ request.args.get('start_date') }}&end_date={{ request.args.get('end_date') }}">Previous</a></li>
+            {% else %}
+                <li class="disabled"><span>Previous</span></li>
+            {% endif %}
+
+            {% for page_num in page_range %}  <!-- 修改：使用 page_range -->
+                {% if page_num == current_page %}
+                    <li class="active"><span>{{ page_num }}</span></li>
+                {% else %}
+                    <li><a href="?page={{ page_num }}&industry_level_1={{ request.args.get('industry_level_1') }}&stock_name={{ request.args.get('stock_name') }}&start_date={{ request.args.get('start_date') }}&end_date={{ request.args.get('end_date') }}">{{ page_num }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if current_page < total_pages %}
+                <li><a href="?page={{ current_page + 1 }}&industry_level_1={{ request.args.get('industry_level_1') }}&stock_name={{ request.args.get('stock_name') }}&start_date={{ request.args.get('start_date') }}&end_date={{ request.args.get('end_date') }}">Next</a></li>
+            {% else %}
+                <li class="disabled"><span>Next</span></li>
+            {% endif %}
+            <li>Page {{ current_page }} of {{ total_pages }}</li> <!-- 显示当前页数和总页数 -->
+        </ul>
+    </div>
+
+
+
+
+
+</body>
+</html>
+

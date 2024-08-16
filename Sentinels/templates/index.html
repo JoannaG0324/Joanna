@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index Score Progress</title>
+    <style>
+ /* 样式部分 */
+        body {
+            font-family: Arial, sans-serif;
+        }
+        nav {
+            background-color: #f2f2f2;
+            padding: 10px;
+            text-align: center;
+        }
+        nav a {
+            margin: 0 15px;
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        nav a:hover {
+            color: #007bff;
+        }
+        table {
+            width: 60%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 3px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .pagination a {
+            color: black;
+            padding: 8px 16px;
+            text-decoration: none;
+            border: 1px solid #ddd;
+            margin: 0 4px;
+        }
+        .pagination a.active {
+            background-color: #4CAF50;
+            color: white;
+            border: 1px solid #4CAF50;
+        }
+        .pagination a:hover:not(.active) {
+            background-color: #ddd;
+        
+        }
+        #loading-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* 半透明背景 */
+        color: white;
+        text-align: center;
+        padding-top: 20%;
+        z-index: 1000; /* 确保在其他元素之上 */
+        }
+        
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}">Market</a>
+        <a href="{{ url_for('stock_price_history') }}">Stock</a>
+    </nav>
+
+    <h1>Market Score <button id="update-button">Update</button> </h1>
+
+
+    <!-- 加载指示器模态框 -->
+    <div id="loading-modal" style="display:none;">
+        <div>
+            <p>正在更新数据，请稍候...</p>
+       </div>
+    </div> 
+   
+    <!-- 弹窗模态框 -->
+    <div id="result-modal" style="display:none;">
+        <div>
+            <span id="modal-message"></span>
+        </div>
+        <div>
+            <button onclick="closeModal()">关闭</button>
+        </div>
+
+    </div>
+
+<!-- Market table -->
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            {% for col in heatmap_data.columns.levels[1] %}
+                <th>
+                    <a href="{{ url_for('stock_price_history') }}?industry_level_1={{ col }}">{{ col }}</a>
+                </th>
+            {% endfor %}
+            <th>Index Score</th>  <!-- 新增一列表头 -->
+        </tr>
+    </thead>
+    <tbody>
+        {% for index, row in heatmap_data.iterrows() %}
+        <tr>
+            <td>{{ index.strftime('%Y-%m-%d') }}</td>  <!-- 显示日期 -->
+            {% for industry in heatmap_data.columns.levels[1] %}
+                <td style="background-color: rgba(255, 0, 0, {{ row[('industry_score_pct', industry)] }});">
+                    {{ (row[('industry_score_pct', industry)] * 100) | round(0) }}  <!-- 使用 industry_score_pct 显示值 -->
+                </td>
+            {% endfor %}
+            <td>
+                <div style="width: 100%; background-color: lightskyblue; overflow: hidden; position: relative;">
+                    <div style="width: {{ (1-(index_scores.loc[index, 'Index Score'] / 800)) * 100 }}%; 
+                                 background-color: white; 
+                                 height: 30px; 
+                                 text-align: right; 
+                                 line-height: 30px; 
+                                 color: black;  /* 设置文本颜色 */
+                                 font-weight: bold;">
+                        {{ index_scores.loc[index, 'Index Score'] }}  <!-- 显示 Index Score 值 -->
+                    </div>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<!-- 添加分页控制 -->
+<div class="pagination">
+    <ul class="pagination">
+        {% if current_page > 1 %}
+            <li><a href="?page={{ current_page - 1 }}">Previous</a></li>
+        {% else %}
+            <li class="disabled"><span>Previous</span></li>
+        {% endif %}
+        
+        {% for page_num in range(1, total_pages + 1) %}
+            {% if page_num == current_page %}
+                <li class="active"><span>{{ page_num }}</span></li>
+            {% else %}
+                <li><a href="?page={{ page_num }}">{{ page_num }}</a></li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if current_page < total_pages %}
+            <li><a href="?page={{ current_page + 1 }}">Next</a></li>
+        {% else %}
+            <li class="disabled"><span>Next</span></li>
+        {% endif %}
+    </ul>
+</div>
+
+<!-- <script src="script.js"></script> -->
+<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+<script>
+//     document.getElementById('update-button').addEventListener('click', function() {
+//         fetch('/update_data')
+//             .then(response => response.json())
+//             .then(data => {
+//                 // 逐条显示消息
+//                 data.messages.forEach(message => {
+//                     // 这里可以使用弹窗或其他方式展示消息
+//                     alert(message);  // 简单示例，使用 alert 弹窗
+//                 });
+//             })
+//             .catch(error => console.error('Error:', error));
+//     });
+document.getElementById('update-button').addEventListener('click', function() {
+    // 显示加载指示器
+    document.getElementById('loading-modal').style.display = 'block';
+
+    // 调用 AJAX 请求更新数据
+    fetch('/update_data')  // 假设更新数据的后端路由为 '/update_data'
+        .then(response => response.json())
+        .then(data => {
+            // 隐藏加载指示器
+            document.getElementById('loading-modal').style.display = 'none';
+
+            // 检查返回的消息
+            if (data.messages && data.messages.length > 0) {
+                // 显示结果弹窗
+                document.getElementById('modal-message').innerText = data.messages.join('\n');
+            } else {
+                // 如果没有返回消息，显示默认提示
+                document.getElementById('modal-message').innerText = "没有返回的结果。";
+            }
+
+            // 显示结果弹窗
+            document.getElementById('result-modal').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // 隐藏加载指示器
+            document.getElementById('loading-modal').style.display = 'none';
+            // 处理错误时显示提示
+            document.getElementById('modal-message').innerText = "请求发生错误。";
+            document.getElementById('result-modal').style.display = 'block';
+        });
+    });
+    function closeModal() {
+        // 隐藏结果模态框
+        document.getElementById('result-modal').style.display = 'none';
+        // 清空结果文本
+        document.getElementById('modal-message').innerText = '';  // 清空结果内容
+    }
+    
+</script>
+</body>    
+</html>
+

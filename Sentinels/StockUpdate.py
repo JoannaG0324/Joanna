@@ -13,7 +13,7 @@ from tqdm import tqdm  # 导入进度显示模块
 
 # 定义数据库连接信息
 USER = 'root'
-PASSWORD = 'Welcome1'  # 替换为实际密码
+PASSWORD = ''  # 替换为实际密码
 HOST = 'localhost'
 DATABASE = 'stock_db'
 

@@ -344,6 +344,40 @@ def data_upate():
     return messages
 
 
+# In[42]:
+
+
+# update_data()
+
+
+# In[32]:
+
+
+# """
+# mannual
+# """
+# def update_data():
+        
+#     # 1. 更新股票基础信息
+#     get_stock_info(engine)
+
+#     # 2. 获取当前日期
+#     end_date = pd.Timestamp.today().strftime('%Y%m%d')
+
+#     # 3. 更新所有股票的股价数据
+#     get_stock_history(engine, end_date)
+
+#     # 4. 计算价格
+#     calculate_price(engine)
+
+#     # 5. 重新计算行业得分
+#     score_industry_df = score_industry(fetch_com_ind_relation(engine),engine)
+
+
+#     return("Finish!")
+
+
+# In[ ]:
 
 
 

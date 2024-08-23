@@ -13,7 +13,7 @@ from tqdm import tqdm  # 导入进度显示模块
 
 # 定义数据库连接信息
 USER = 'root'
-PASSWORD = 'Welcome1'  # 替换为实际密码
+PASSWORD = ''  # 替换为实际密码
 HOST = 'localhost'
 DATABASE = 'stock_db'
 
@@ -321,16 +321,16 @@ def data_upate():
     
     messages = []
     
-#     # 1. 更新股票基础信息
-#     msg = get_stock_info(engine)
-#     messages.append(msg)
+    # 1. 更新股票基础信息
+    msg = get_stock_info(engine)
+    messages.append(msg)
 
-#     2. 获取当前日期
-#     end_date = pd.Timestamp.today().strftime('%Y%m%d')
+    # 2. 获取当前日期
+    end_date = pd.Timestamp.today().strftime('%Y%m%d')
 
-#     # 3. 更新所有股票的股价数据
-#     msg = get_stock_history(engine, end_date)
-#     messages.append(msg)
+    # 3. 更新所有股票的股价数据
+    msg = get_stock_history(engine, end_date)
+    messages.append(msg)
 
     
     # 4. 计算价格

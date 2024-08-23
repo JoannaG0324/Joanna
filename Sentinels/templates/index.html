@@ -62,6 +62,10 @@
             background-color: #ddd;
         
         }
+        .table-container {
+/*             display: flex; 
+            justify-content: center; */
+        }
         #loading-modal {
         position: fixed;
         top: 0;
@@ -105,13 +109,15 @@
     </div>
 
 <!-- Market table -->
+<div class="table-container">
 <table>
     <thead>
         <tr>
             <th>Date</th>
             {% for col in heatmap_data.columns.levels[1] %}
                 <th>
-                    <a href="{{ url_for('stock_price_history') }}?industry_level_1={{ col }}">{{ col }}</a>
+                    <a >{{ col }}</a> 
+<!--                 href="{{ url_for('stock_price_history') }}?industry_level_1={{ col }}"     -->
                 </th>
             {% endfor %}
             <th>Index Score</th>  <!-- 新增一列表头 -->
@@ -123,19 +129,19 @@
             <td>{{ index.strftime('%Y-%m-%d') }}</td>  <!-- 显示日期 -->
             {% for industry in heatmap_data.columns.levels[1] %}
                 <td style="background-color: rgba(255, 0, 0, {{ row[('industry_score_pct', industry)] }});">
-                    {{ (row[('industry_score_pct', industry)] * 100) | round(0) }}  <!-- 使用 industry_score_pct 显示值 -->
+                    {{ (row[('industry_score_pct', industry)] * 100) | int }}  <!-- 使用 industry_score_pct 显示值 -->
                 </td>
             {% endfor %}
             <td>
                 <div style="width: 100%; background-color: lightskyblue; overflow: hidden; position: relative;">
-                    <div style="width: {{ (1-(index_scores.loc[index, 'Index Score'] / 800)) * 100 }}%; 
+                    <div style="width: {{ 100-index_scores.loc[index, 'Index Score']*100 }}%; 
                                  background-color: white; 
                                  height: 30px; 
                                  text-align: right; 
                                  line-height: 30px; 
                                  color: black;  /* 设置文本颜色 */
                                  font-weight: bold;">
-                        {{ index_scores.loc[index, 'Index Score'] }}  <!-- 显示 Index Score 值 -->
+                        {{ (index_scores.loc[index, 'Index Score'] * 100) | int }}  <!-- 显示 Index Score 值 -->
                     </div>
                 </div>
             </td>
@@ -143,6 +149,7 @@
         {% endfor %}
     </tbody>
 </table>
+</div>
 <!-- 添加分页控制 -->
 <div class="pagination">
     <ul class="pagination">

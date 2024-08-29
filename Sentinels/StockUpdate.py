@@ -1,70 +1,31 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[12]:
-
-
 import pandas as pd
 from sqlalchemy import create_engine
 import time
 import akshare as ak
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm  # 导入进度显示模块
-
 # 定义数据库连接信息
-USER = 'root'
-PASSWORD = ''  # 替换为实际密码
-HOST = 'localhost'
-DATABASE = 'stock_db'
+import utils.config as config  
 
-# 定义数据表名称
-STOCK_INFO_TABLE_NAME = 'stock_info'
-STOCK_DAILY_TABLE_NAME = 'stock_daily_qfq' # 前复权
-STOCK_PRICE_RESULTS_TABLE_NAME = 'stock_price_results_qfq'
-SCORE_INDUSTRY_TABLE_NAME = 'score_industry_qfq'
+USER = config.DB_CONFIG['USER']
+PASSWORD = config.DB_CONFIG['PASSWORD']
+HOST = config.DB_CONFIG['HOST']
+DATABASE = config.DB_CONFIG['DATABASE']
 
-# test
-# STOCK_INFO_TABLE_NAME = 'stock_info'
-# STOCK_DAILY_TABLE_NAME = 'stock_daily_copy1'
-# STOCK_PRICE_RESULTS_TABLE_NAME = 'stock_price_results_temp'
-# SCORE_INDUSTRY_TABLE_NAME = 'score_industry_temp'
+# 从配置文件中获取数据表名称
+STOCK_INFO_TABLE_NAME = config.TABLE_NAMES['STOCK_INFO']# 股票基础信息  
+STOCK_DAILY_TABLE_NAME = config.TABLE_NAMES['STOCK_DAILY']# 股票日线数据
+STOCK_PRICE_RESULTS_TABLE_NAME = config.TABLE_NAMES['STOCK_PRICE_RESULTS']# 股票计算结果
+SCORE_INDUSTRY_TABLE_NAME = config.TABLE_NAMES['SCORE_INDUSTRY']# 股票评分  
+STOCK_YJBB_TABLE_NAME = config.TABLE_NAMES['STOCK_YJBB']# 业绩报表
 
 # 创建数据库连接引擎
 engine = create_engine(f"mysql+pymysql://{USER}:{PASSWORD}@{HOST}/{DATABASE}")
 
-
-# In[13]:
-
-
-# stock_info_df = pd.read_sql(f"SELECT stock_code, market FROM {STOCK_INFO_TABLE_NAME}", con=engine)
-# stock_info_df
-
-
-# In[14]:
-
-
-# for index, row in stock_info_df.iterrows():
-#             stock_code = row['stock_code']
-#             market = row['market']
-#             full_stock_code = f"{market}{stock_code}"
-#             print(full_stock_code)
-
-
-# In[15]:
-
-
-# # 获取stock_daily表中的最新日期作为start_date
-# latest_date_query = f"SELECT MAX(date) FROM {STOCK_DAILY_TABLE_NAME}"
-# latest_date = pd.read_sql(latest_date_query, con=engine).iloc[0, 0]
-# latest_date
-
-
-# In[16]:
-
-
+# 更新股票基础信息表
 def get_stock_info(engine):
     """
-    Replace: 更新并覆盖股票基础信息表
+    Replace: 更新并覆盖股票基础信息表 
     
     """
     try:
@@ -98,10 +59,7 @@ def get_stock_info(engine):
     except Exception as e:
         return f"更新股票基础信息时发生错误: {e}"
 
-
-# In[17]:
-
-
+# 获取单只股票的历史数据：访问数据接口
 def fetch_stock_history(full_stock_code, start_date, end_date):
     """
     获取单只股票的历史数据
@@ -121,10 +79,7 @@ def fetch_stock_history(full_stock_code, start_date, end_date):
     except Exception as e:
         return None, f"获取 {full_stock_code} 的历史数据时发生错误: {e}"    
 
-
-# In[18]:
-
-
+# 更新所有股票的股价数据
 def get_stock_history(engine, end_date):
     """
     Append: 更新所有股票的股价数据，并将新数据批量追加到股价数据表中
@@ -174,10 +129,7 @@ def get_stock_history(engine, end_date):
     except Exception as e:
         return f"更新股票历史数据时发生错误: {e}"
 
-
-# In[19]:
-
-
+# 计算价格：计算给定股价数据的 20 日均价和 14 日 ATR，并将结果写入数据库
 def calculate_price(engine, ma_window=20, atr_window=14):
     """
     Replace: 从数据库读取股价数据，计算给定股价数据的 20 日均价和 14 日 ATR，并将结果写入数据库。
@@ -226,10 +178,7 @@ def calculate_price(engine, ma_window=20, atr_window=14):
     except Exception as e:
         return f"Error in calculate_price: {e}"
 
-
-# In[20]:
-
-
+# 重新计算行业得分：计算行业得分，并将结果写入数据库
 def score_industry(com_ind_df, engine):
     """
     Replace: 计算行业得分
@@ -244,13 +193,13 @@ def score_industry(com_ind_df, engine):
 
         # 合并个股得分与行业数据
         merged_df = calculate_price_df.merge(
-            com_ind_df[['stock_code', 'industry_level_1_name']], 
+            com_ind_df[['stock_code', 'industry_level_1_name', 'industry_level_2_name']], 
             on='stock_code', 
             how='left'
         )
 
-        # 按日期和行业计算得分
-        industry_scores = (merged_df.groupby(['date', 'industry_level_1_name'])
+        # 按日期和二级行业计算得分
+        industry_scores = (merged_df.groupby(['date', 'industry_level_1_name', 'industry_level_2_name'])
             .agg(industry_score=('stock_score', 'sum'),
                  industry_score_sum=('stock_score', 'count'))
             .reset_index()
@@ -259,8 +208,7 @@ def score_industry(com_ind_df, engine):
         # 计算行业得分比例
         industry_scores['industry_score_pct'] = industry_scores['industry_score'] / industry_scores['industry_score_sum'].replace(0, pd.NA)
         
-        score_industry_df = industry_scores[['date', 'industry_level_1_name', 'industry_score', 'industry_score_sum', 'industry_score_pct']]
-        
+        score_industry_df = industry_scores[['date', 'industry_level_1_name', 'industry_level_2_name', 'industry_score', 'industry_score_sum', 'industry_score_pct']]
         # 将结果写入数据库
         score_industry_df.to_sql(SCORE_INDUSTRY_TABLE_NAME, con=engine, if_exists='replace', index=False)
 
@@ -269,10 +217,7 @@ def score_industry(com_ind_df, engine):
     except Exception as e:
         return f"Score industry calculation failed: {e}"
 
-
-# In[21]:
-
-
+# 创建中证800与行业分类的关系并返回合并后的DataFrame    
 def fetch_com_ind_relation(engine):
     """
     创建中证800与行业分类的关系并返回合并后的DataFrame。
@@ -313,10 +258,50 @@ def fetch_com_ind_relation(engine):
 
     return com_ind_df
 
+# 更新业绩报表数据
+def update_stock_yjbb(date, engine):
+    '''
+    更新业绩报表数据
+    输入：日期（格式：20240630）
+    输出：更新结果
+    '''
+    # 列名映射
+    column_mapping = {
+        '序号': 'index',
+        '股票代码': 'stock_code',
+        '股票简称': 'stock_name',
+        '每股收益': 'eps',
+        '营业收入-营业收入': 'operating_revenue',
+        '营业收入-同比增长': 'revenue_yoy_growth',
+        '营业收入-季度环比增长': 'revenue_qoq_growth',
+        '净利润-净利润': 'net_profit',
+        '净利润-同比增长': 'net_profit_yoy_growth',
+        '净利润-季度环比增长': 'net_profit_qoq_growth',
+        '每股净资产': 'net_assets_per_share',
+        '净资产收益率': 'roe',
+        '每股经营现金流量': 'operating_cash_flow_per_share',
+        '销售毛利率': 'gross_profit_margin',
+        '所处行业': 'industry',
+        '最新公告日期': 'latest_announcement_date'
+    }
 
-# In[22]:
+    try:
+        # 获取新数据
+        stock_yjbb_em_df = ak.stock_yjbb_em(date=date)
+        print(f"已获取{date}的业绩报表数据")
 
+        # 应用列名映射
+        stock_yjbb_em_df.rename(columns=column_mapping, inplace=True)
 
+        # 写入数据库
+        stock_yjbb_em_df.to_sql('stock_yjbb', engine, if_exists='replace', index=False)
+        print(f"{date}的数据已成功写入MySQL")
+
+        return f"{date}的数据更新成功"
+    except Exception as e:
+        return f"更新数据时发生错误: {e}"
+
+# 数据更新：更新所有股票的股价数据、计算价格、重新计算行业得分
 def data_upate():
     
     messages = []
@@ -332,53 +317,23 @@ def data_upate():
     msg = get_stock_history(engine, end_date)
     messages.append(msg)
 
-    
     # 4. 计算价格
     msg = calculate_price(engine)
     messages.append(msg)
 
-    # 5. 重新计算行业得分
+    # # 5. 重新计算行业得分
     msg = score_industry(fetch_com_ind_relation(engine),engine)
     messages.append(msg)
+
+    # 更新业绩报表数据
+    # msg = update_stock_yjbb(config.YJBB_DATE, engine)
+    # messages.append(msg)
 
     return messages
 
 
-# In[42]:
 
-
-# update_data()
-
-
-# In[32]:
-
-
-# """
-# mannual
-# """
-# def update_data():
-        
-#     # 1. 更新股票基础信息
-#     get_stock_info(engine)
-
-#     # 2. 获取当前日期
-#     end_date = pd.Timestamp.today().strftime('%Y%m%d')
-
-#     # 3. 更新所有股票的股价数据
-#     get_stock_history(engine, end_date)
-
-#     # 4. 计算价格
-#     calculate_price(engine)
-
-#     # 5. 重新计算行业得分
-#     score_industry_df = score_industry(fetch_com_ind_relation(engine),engine)
-
-
-#     return("Finish!")
-
-
-# In[ ]:
-
-
-
-
+# if __name__ == "__main__":
+#     messages = data_upate()
+#     for msg in messages:
+#         print(msg)

@@ -7,149 +7,176 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.min.js"></script>
     <style>
-        /* 添加样式使表格行可以点击 */
-        /* 样式部分 */
+        /* 全局样式 */
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background-color: #f8f8f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 导航栏样式 */
         nav {
-            background-color: #f2f2f2;
-            padding: 10px;
+            background-color: #2c3e50;
+            padding: 10px 0;
             text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         nav a {
             margin: 0 15px;
             text-decoration: none;
-            color: #333;
+            color: #ecf0f1;
             font-weight: bold;
+            transition: color 0.2s ease;
         }
         nav a:hover {
-            color: #007bff;
+            color: #3498db;
         }
+
+        /* 表格容器样式 */
         .table-container {
-            width: 70%; /* 确保容器宽度填满父容器 */
-            max-height: 600px; /* 设置固定高度 */
-            overflow-y: auto; /* 添加垂直滚动条 */
-            display: flex; /* 使用 Flexbox 布局 */
+            width: 98%;
+            max-height: 70vh;
+            overflow-y: auto;
+            margin: 15px auto;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.08);
+            border-radius: 6px;
         }
+
+        /* 表格样式 */
         table {
             width: 100%;
-/*             border-collapse: collapse; */
+            border-collapse: collapse;
         }
         th, td {
-            border: 1px solid #ddd;
+            border: 1px solid #e0e0e0;
             padding: 8px;
-            text-align: center;
+            text-align: left;
+            font-size: 0.9em;
         }
         th {
-            background-color: #f2f2f2;
+            background-color: #f0f0f0;
+            color: #333;
             position: sticky;
             top: 0;
             z-index: 2;
         }
         tr:hover {
             background-color: #f5f5f5;
-            font-family: Arial, sans-serif;
-            cursor: pointer; 
+            cursor: pointer;
         }
+
+        /* 分页样式 */
         .pagination {
             display: flex;
             justify-content: center;
             margin-top: 20px;
         }
         .pagination a {
-            color: black;
-            padding: 8px 16px;
+            color: #3498db;
+            padding: 8px 14px;
             text-decoration: none;
-            border: 1px solid #ddd;
-            margin: 0 4px;
+            border: 1px solid #3498db;
+            margin: 0 3px;
+            border-radius: 3px;
+            transition: all 0.2s ease;
         }
         .pagination a.active {
-            background-color: #4CAF50;
-            color: white;
-            border: 1px solid #4CAF50;
+            background-color: #3498db;
+            color: #fff;
         }
         .pagination a:hover:not(.active) {
-            background-color: #ddd;
-        
+            background-color: #e8f4fc;
         }
+
+        /* 搜索容器样式 */
         .search-container {
-/*             display: flex;
-            justify-content: center; /* 垂直居中 */ 
-            gap: 10px; /* 元素之间的间距（可选，根据需要调整） */
-            margin-bottom: 5px; /* 在表单下方添加间距，确保与表格分开 */
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin: 15px auto;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 6px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.08);
+            max-width: 98%;
+        }
+        .search-container select,
+        .search-container input[type="text"] {
+            padding: 8px 12px;
+            width: 200px;
+            border: 1px solid #bdc3c7;
+            border-radius: 3px;
+            font-size: 0.9em;
         }
         .search-container select {
-            padding: 4px;
-            width: 200px; /* Adjusted to accommodate the dropdown arrow */
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #fff; /* Ensures the background is white */
-            -webkit-appearance: none; /* Removes the default dropdown styling in WebKit browsers */
-            -moz-appearance: none; /* Removes the default dropdown styling in Firefox */
-            appearance: none; /* Removes the default dropdown styling in modern browsers */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 10px;
+            padding-right: 25px;
+            appearance: none;
         }
-        .search-container input[type="text"] {
-            padding: 4px;
-            width: 200px; /* Adjusted to accommodate the dropdown arrow */
-            border: 1px solid #ddd;
-            border-radius: 4px;
+        .search-container select:focus,
+        .search-container input[type="text"]:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52,152,219,0.15);
         }
         .search-container button {
-            padding: 4px;
+            padding: 8px 15px;
             border: none;
-            background-color: #4CAF50;
+            background-color: #3498db;
             color: white;
-            border-radius: 4px;
+            border-radius: 3px;
             cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease;
         }
         .search-container button:hover {
-            background-color: #45a049;
+            background-color: #2980b9;
         }
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-        .close:hover,
-        .close:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        .table-container {
-/*             display: flex; 
-            justify-content: center; */
-        }
-        /* 确保弹窗内的图表容器设置为合适的大小 */
+
+        /* 图表容器样式 */
         .chart-container {
-            flex-direction: column; /* 垂直方向布局（确保标题和图表分开显示） */
-            justify-content: center; /* 横向居中对齐 */
-            align-items: center; /* 纵向居中对齐 */
-            width: 100%; /* 确保容器占据弹窗的全部宽度 */             
-            height: 400px; /* 设置适当的高度，确保图表不会被挤压 */ 
-            box-sizing: border-box; /* 包括边框和内边距在元素的宽度和高度中 */
-            overflow: hidden; /* 确保内容不会超出容器 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 98%;
+            height: 400px;
+            box-sizing: border-box;
+            overflow: hidden;
+            background-color: #fff;
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.08);
+            margin: 15px auto;
         }
 
-        /* 图表的样式设置 */
         #chart {
-            width: 100%; /* 设置宽度为容器宽度的 100% */
-            height: 100%; /* 设置高度为容器高度的 100% */
-            box-sizing: border-box; /* 确保包含内边距和边框在宽度和高度内 */
-            overflow: hidden; /* 确保内容不会超出容器 */
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
         }
 
-        /* 图表标题的样式设置 */
         #stock-name {
-            text-align: center; /* 使文本在 <h3> 内部居中显示 */
-            width: 100%; /* 使 <h3> 占据其容器的全部宽度 */
-            margin: 0; /* 移除默认外边距 */
-            padding: 10px; /* 根据需要调整内边距 */
-            font-size: 18px; /* 设置标题字体大小 */
-            font-weight: bold; /* 设置标题字体粗细 */
-            background-color: #f8f9fa; /* 设置标题背景颜色以与弹窗的背景颜色区分 */
-        }     
+            text-align: center;
+            width: 100%;
+            margin: 0;
+            padding: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            border-bottom: 1px solid #e0e0e0;
+        }
     </style>
 </head>
 <body>
@@ -158,23 +185,12 @@
         <a href="{{ url_for('stock_price_history') }}">Stock</a>
     </nav>
     
-    <h1>Stock Price </h1>
-
-    
     <div class="search-container">       
         <form id="search-form" method="get" action="/stock_price_history">
                 <select name="index">
                     <option value="">All Stock</option>
                     <option value="csindex_800" {% if request.args.get('index') == 'csindex_800' %}selected{% endif %}>csindex 800</option>
                 </select>
-
-<!--                 <select id="industry_level_1" name="industry_level_1">
-                    <option value="">All Industry</option>
-                    {% for name in industry_level_1_names %}
-                        <option value="{{ name }}" {% if name == request.args.get('industry_level_1') %}selected{% endif %}>{{ name }}</option>
-                    {% endfor %}
-                </select> -->
-                
 
                 <input type="text" name="stock_name" placeholder="Stock Name" value="{{ request.args.get('stock_name', '') }}">
 
@@ -216,6 +232,14 @@
                     <th onclick="sortTable('price_change_percentage')">涨跌</th>
                     <th onclick="sortTable('20_day_ma')">MA_20</th>
                     <th onclick="sortTable('ATR')">ATR</th>
+                    <th onclick="sortTable('eps')">EPS</th>
+                    <th onclick="sortTable('pe')">PE</th>
+                    <th onclick="sortTable('net_assets_per_share')">NAV</th>
+                    <th onclick="sortTable('pb')">PB</th>
+                    <th onclick="sortTable('roe')">ROE</th>
+                    <th onclick="sortTable('operating_cash_flow_per_share')">Cash Flow</th>
+                    <th onclick="sortTable('gross_profit_margin')">Gross Profit</th> 
+                    <th onclick="sortTable('latest_announcement_date')">Report Date</th> 
                 </tr>
             </thead>
             <tbody id="table-body">
@@ -287,7 +311,7 @@
                                 myTool_20d: {
                                     show: true,
                                     title: '20D',
-                                    icon: 'path://M613.449865 887.558615l-57.825401 68.910306-17.419136-24.519604c-8.786192-13.792278-14.200938-27.584556-15.120423-41.376834-0.306495-4.597426 0.40866-10.727327 0.153247-15.27367l20.177592-300.262995 48.170807-59.766537 42.347401 59.766537-20.484087 312.522797z m28.452959-434.967574l-50.265191 62.831487-40.3041-62.831487 16.755063-266.497456c2.196548-18.389704 2.656291-29.117031 3.371446-35.246932 1.379228-13.741195 6.334231-24.519605 15.835578-35.19585l30.445176-36.728325 43.930959 67.377831-19.768931 306.290732z m208.978549 448.810934l48.885962 73.507733-25.183677 30.700588c-10.420832 13.741195-22.57847 18.389704-44.084207 18.389704h-199.22179c-21.505737 0-34.327447-6.129901-43.062556-18.389704l-20.126509-30.700588 60.890352-73.507733h221.902425zM678.426818 124.845655l-47.251322-65.845356 21.812232-30.700588c13.536865-18.389704 26.613988-26.05208 43.573381-26.052081h207.139579c15.835578 0 31.262496 10.727327 41.325751 26.052081l17.725631 29.11703-59.051382 67.377831h-225.27387z m211.379428 450.241245l50.316272-61.24793 40.201936 61.24793-16.806146 265.016063c-0.970568 19.922179-2.45196 32.181981-2.145466 36.779408-1.379228 13.741195-6.436396 22.936047-16.959393 35.195849l-32.794971 35.19585-41.325751-61.24793 19.513519-310.93924z m28.861618-428.837673l58.898134-68.910307 13.84336 21.454655c10.063255 15.324753 15.478001 29.117031 16.448569 44.390701 0.40866 6.129901 0.81732 12.259802 0.051082 18.389704l-18.542951 291.017061-51.49117 61.299012-39.078121-61.299012 19.871097-306.341814zM119.890652 883.727427l-97.05677 118.000599 23.80445-364.524793c0.561908-9.194852 1.123815-18.389704 2.86062-26.052081 1.787888-7.662377 3.626858-13.741195 6.691809-18.389703 0 0 6.283149-7.662377 16.601816-21.454655l30.087599-39.793275 37.188067 53.585553L119.890652 883.727427z m254.135488 15.375835l41.121421 61.299013-48.937045 61.299012H35.298015l101.296617-122.546942 237.431508-0.051083z m24.928265-347.718647c-12.41305 16.857228-22.271974 21.454654-48.119725 21.454655H157.283049l-40.968173-59.766537 32.028734-44.390702c4.137683-6.129901 9.450264-10.727327 14.86501-13.792277 5.414746-3.013868 9.807842-4.597426 15.426918-4.597426h212.707573l40.968173 59.766537-33.356879 41.32575zM173.322957 122.546942l-40.968173-59.766537L180.065849 0h229.564801c22.476304 0 33.152549 7.662377 45.667764 27.584556l15.06934 24.519604-57.365659 70.442782H173.322957z m251.12162 19.871097l58.489475-70.442782 19.973261 30.649506c2.45196 3.064951 5.210416 10.727327 8.122119 21.454654 1.43031 4.597426 1.736805 9.245934 1.992218 13.792278 0.40866 6.129901-0.051083 16.857228-0.306495 30.649506l-15.835578 226.653098c-1.63464 27.584556-5.414746 38.311883-19.871097 58.182979l-31.211413 39.844358-40.866008-58.182979 19.513518-292.600618z', // 自定义图标
+                                    icon: 'path://M613.449865 887.558615l-57.825401 68.910306-17.419136-24.519604c-8.786192-13.792278-14.200938-27.584556-15.120423-41.376834-0.306495-4.597426 0.40866-10.727327 0.153247-15.27367l20.177592-300.262995 48.170807-59.766537 42.347401 59.766537-20.484087 312.522797z m28.452959-434.967574l-50.265191 62.831487-40.3041-62.831487 16.755063-266.497456c2.196548-18.389704 2.656291-29.117031 3.371446-35.246932 1.379228-13.741195 6.334231-24.519605 15.835578-35.19585l30.445176-36.728325 43.930959 67.377831-19.768931 306.290732z m208.978549 448.810934l48.885962 73.507733-25.183677 30.700588c-10.420832 13.741195-22.57847 18.389704-44.084207 18.389704h-199.22179c-21.505737 0-34.327447-6.129901-43.062556-18.389704l-20.126509-30.700588 60.890352-73.507733h221.902425zM678.426818 124.845655l-47.251322-65.845356 21.812232-30.700588c13.536865-18.389704 26.613988-26.05208 43.573381-26.052081h207.139579c15.835578 0 31.262496 10.727327 41.325751 26.052081l17.725631 29.11703-59.051382 67.377831h-225.27387z m211.379428 450.241245l50.316272-61.24793 40.201936 61.24793-16.806146 265.016063c-0.970568 19.922179-2.45196 32.181981-2.145466 36.779408-1.379228 13.741195-6.436396 22.936047-16.959393 35.195849l-32.794971 35.19585-41.325751-61.24793 19.513519-310.93924z m28.861618-428.837673l58.898134-68.910307 13.84336 21.454655c10.063255 15.324753 15.478001 29.117031 16.448569 44.390701 0.40866 6.129901 0.81732 12.259802 0.051082 18.389704l-18.542951 291.017061-51.49117 61.299012-39.078121-61.299012 19.871097-306.341814zM119.890652 883.727427l-97.05677 118.000599 23.80445-364.524793c0.561908-9.194852 1.123815-18.389704 2.86062-26.052081 1.787888-7.662377 3.626858-13.741195 6.691809-18.389703 0 0 6.283149-7.662377 16.601816-21.454655l30.087599-39.793275 37.188067 53.585553L119.890652 883.727427z m254.135488 15.375835l41.121421 61.299013-48.937045 61.299012H35.298015l101.296617-122.546942 237.431508-0.051083z m24.928265-347.718647c-12.41305 16.857228-22.271974 21.454654-48.119725 21.454655H157.283049l-40.968173-59.766537 32.028734-44.390702c4.137683-6.129901 9.450264-10.727327 14.86501-13.792277 5.414746-3.013868 9.807842-4.597426 15.426918-4.597426h212.707573l40.968173 59.766537-33.356879 41.32575zM173.322957 122.546942l-40.968173-59.766537L180.065849 0h229.564801c22.476304 0 33.152549 7.662377 45.667764 27.584556l15.06934 24.519604-57.365659 70.442782H173.322957z m251.12162 19.871097l58.489475-70.442782 19.973261 30.649506c2.45196 3.064951 5.210416 10.727327 8.122119 21.454654 1.43031 4.597426 1.736805 9.245934 1.992218 13.792278 0.40866 6.129901-0.051083 16.857228-0.306495 30.649506l-15.835578 226.653098c-1.63464 27.584556-5.414746 38.311883-19.871097 58.182979l-31.211413 39.844358-40.866008-58.182979 19.513519-292.600618z', // 自定义图标
                                     onclick: function () {
                                         myChart.dispatchAction({
                                             type: 'dataZoom',
@@ -323,6 +347,7 @@
                     values: values,
                 };
             }
+            // 计算MA
         function calculateMA(dayCount, data) {
             var result = [];
             for (var i = 0, len = data.values.length; i < len; i++) {
@@ -339,10 +364,10 @@
             return result;
         }
 
-        var data = splitData(rawData);
+            var data = splitData(rawData);
 
-        return {
-            animation: false,
+            return {
+                animation: false,
             legend: {
                 top: 10,
                 left: 'center',
@@ -474,22 +499,34 @@ function sortTable(column) {
     sortedData.forEach(row => {
         const tr = document.createElement('tr');
         tr.onclick = () => showStockChart(row.stock_code, row.stock_name);
-        tr.innerHTML = `
-            <td>${row.date}</td>
-            <td>${row.industry_level_1_name}</td>
-            <td>${row.industry_level_2_name}</td>
-            <td>${row.industry_level_3_name}</td>
-            <td>${row.industry_level_4_name}</td>
-            <td>${row.stock_code}</td>
-            <td>${row.stock_name}</td>
-            <td>${row.open}</td>
-            <td>${row.close}</td>
-            <td style="background-color: ${row.price_change_percentage > 0 ? `rgba(255, 0, 0, ${row.price_change_percentage / 10})` : row.price_change_percentage < 0 ? `rgba(0, 128, 0, ${-row.price_change_percentage / 10})` : 'white'};">
-                ${row.price_change_percentage.toFixed(2)}%
-            </td>
-            <td>${row['20_day_ma']}</td>
-            <td>${row.ATR}</td>
-        `;
+        tr.innerHTML = generateTableRowHTML(row);
+        // 生成表格行HTML
+        function generateTableRowHTML(row) {
+            return `
+                <td>${row.date}</td>
+                <td>${row.industry_level_1_name}</td>
+                <td>${row.industry_level_2_name}</td>
+                <td>${row.industry_level_3_name}</td>
+                <td>${row.industry_level_4_name}</td>
+                <td>${row.stock_code}</td>
+                <td>${row.stock_name}</td>
+                <td style="text-align: right;">${row.open.toFixed(2)}</td>
+                <td style="text-align: right;">${row.close.toFixed(2)}</td>
+                <td style="background-color: ${row.price_change_percentage > 0 ? `rgba(255, 0, 0, ${row.price_change_percentage / 10})` : row.price_change_percentage < 0 ? `rgba(0, 128, 0, ${-row.price_change_percentage / 20})` : 'white'}; text-align: right;">
+                    ${row.price_change_percentage.toFixed(2)}%
+                </td>
+                <td style="text-align: right;">${row['20_day_ma'].toFixed(2)}</td>
+                <td style="text-align: right;">${row.ATR.toFixed(2)}</td>
+                <td style="text-align: right;">${parseFloat(row.eps).toFixed(2)}</td>
+                <td style="text-align: right;">${parseFloat(row.pe).toFixed(2)}</td>
+                <td style="text-align: right;">${parseFloat(row.net_assets_per_share).toFixed(2)}</td>
+                <td style="text-align: right;">${parseFloat(row.roe).toFixed(2)}%</td>
+                <td style="text-align: right;">${parseFloat(row.pb).toFixed(2)}</td>
+                <td style="text-align: right;">${parseFloat(row.operating_cash_flow_per_share).toFixed(2)}</td>
+                <td style="text-align: right;">${parseFloat(row.gross_profit_margin).toFixed(2)}%</td>
+                <td style="text-align: right;">${row.latest_announcement_date}</td>
+            `;
+        }
         tableBody.appendChild(tr);
     });
 }  
@@ -517,7 +554,15 @@ function loadData() {
             close: {{ row['close'] }},
             price_change_percentage: {{ row['price_change_percentage'] }},
             '20_day_ma': {{ row['20_day_ma'] }},
-            ATR: {{ row['ATR'] }}
+            ATR: {{ row['ATR'] }},
+            eps: {{ row['eps'] }},
+            pe: {{ row['pe'] }},
+            net_assets_per_share: {{ row['net_assets_per_share'] }},
+            roe: {{ row['roe'] }},
+            pb: {{ row['pb'] }},
+            operating_cash_flow_per_share: {{ row['operating_cash_flow_per_share'] }},
+            gross_profit_margin: {{ row['gross_profit_margin'] }},
+            latest_announcement_date: '{{ row['latest_announcement_date'] }}'
         },
         {% endfor %}
     ];
@@ -603,7 +648,7 @@ function updateLevel3() {
     // 清空 Level 4 选项
     updateLevel4();
 }
-
+// 更新第四级行业
 function updateLevel4() {
     const level3Select = document.getElementById('industry-level-3');
     const level4Select = document.getElementById('industry-level-4');

@@ -30,13 +30,13 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    # 获取 use_level_2 参数
+    # 获取 use_level_2 参数，决定是否使用二级行业
     use_level_2 = request.args.get('use_level_2', 'false').lower() == 'true'
     
-    # 获取并处理数据
-    score_industry_df = get_processed_score_industry_data(use_level_2)
+    # 获取并处理行业评分数据
+    score_industry_df, columns_order = get_processed_score_industry_data(use_level_2)
 
-    # 计算并设置 Index Score
+    # 计算指数得分
     index_scores = score_industry_df.groupby('date').agg({
         'industry_score': 'sum',
         'industry_score_sum': 'sum'
@@ -45,7 +45,7 @@ def index():
     index_scores = index_scores[['Index Score']]
     index_scores.index = pd.to_datetime(index_scores.index)
         
-    # 创建数据透视表，按日期降序
+    # 创建数据透视表
     industry_level_column = 'industry_level_2_name' if use_level_2 else 'industry_level_1_name'
     heatmap_data = score_industry_df.pivot_table(
         index='date', 
@@ -54,11 +54,10 @@ def index():
         fill_value=0
     )
 
-    # 将索引转换为 datetime 类型，并按日期降序排列
-    heatmap_data.index = pd.to_datetime(heatmap_data.index)
-    heatmap_data = heatmap_data.sort_index(ascending=False)
-        
-    # 计算分页数据
+    # 按日期倒序排列索引并填充缺失值
+    heatmap_data = heatmap_data.sort_index(ascending=False).fillna(0)
+
+    # 处理分页
     page_size = 60
     page = request.args.get('page', 1, type=int)
     total_rows = heatmap_data.shape[0]
@@ -67,16 +66,16 @@ def index():
     end = start + page_size
     paginated_data = heatmap_data.iloc[start:end]
 
-    # 获取分页后的索引，并确保与 index_scores 一致
-    paginated_index = paginated_data.index
-    paginated_index_scores = index_scores.loc[paginated_index]
+    # 获取分页后的指数得分
+    paginated_index_scores = index_scores.loc[paginated_data.index]
 
     return render_template('index.html', 
                            heatmap_data=paginated_data, 
                            index_scores=paginated_index_scores, 
                            total_pages=total_pages, 
                            current_page=page,
-                           use_level_2=use_level_2)
+                           use_level_2=use_level_2,
+                           columns_order=columns_order)
 
 # 获取处理后的行业数据
 def get_processed_score_industry_data(use_level_2):
@@ -90,19 +89,56 @@ def get_processed_score_industry_data(use_level_2):
     # 根据 use_level_2 参数选择查询的列
     industry_level_column = 'industry_level_2_name' if use_level_2 else 'industry_level_1_name'
     
-    query = f"SELECT date, {industry_level_column}, industry_score, industry_score_sum, industry_score_pct FROM {SCORE_INDUSTRY_TABLE_NAME}"
+    # 定义一级行业的固定顺序
+    level_1_order = [
+        '能源', '原材料', '工业', '房地产', '公用事业','信息技术', 
+        '通信服务', '医药卫生', '主要消费', '可选消费', '金融'
+    ]
+
+    # 查询数据
+    query = f"""
+    SELECT date, industry_level_1_name, 
+           {f'{industry_level_column},' if use_level_2 else ''}
+           industry_score, industry_score_sum, industry_score_pct 
+    FROM {SCORE_INDUSTRY_TABLE_NAME}
+    """
     df = pd.read_sql(query, engine)
     
     df['industry_score_pct'] = df['industry_score_pct'].fillna(0)
     df['date'] = pd.to_datetime(df['date'])
     
-    df = df.groupby(['date', industry_level_column]).agg({
+    # 分组并聚合数据
+    group_columns = ['date', 'industry_level_1_name']
+    if use_level_2:
+        group_columns.append(industry_level_column)
+    
+    df = df.groupby(group_columns).agg({
         'industry_score': 'sum',
         'industry_score_sum': 'sum',
         'industry_score_pct': 'mean'
     }).reset_index()
     
-    return df
+    # 根据use_level_2参数决定返回的columns_order
+    if use_level_2:
+        level_2_order = {}
+        for i, level_1 in enumerate(level_1_order):
+            level_2_industries = df[df['industry_level_1_name'] == level_1]['industry_level_2_name'].unique()
+            for j, level_2 in enumerate(level_2_industries):
+                level_2_order[level_2] = (i, j)
+        df['industry_level_2_order'] = df['industry_level_2_name'].map(level_2_order)
+        df = df.sort_values(['industry_level_1_name', 'industry_level_2_order'])
+        df = df.drop(['industry_level_1_name', 'industry_level_2_order'], axis=1)
+        columns_order = list(level_2_order.keys())
+    else:
+        df['industry_level_1_order'] = df['industry_level_1_name'].map({name: i for i, name in enumerate(level_1_order)})
+        df = df.sort_values('industry_level_1_order')
+        df = df.drop('industry_level_1_order', axis=1)
+        columns_order = level_1_order
+    
+    # print(df[[industry_level_column, 'industry_score']].tail(40))  # 添加这行来检查排序
+    # print(columns_order)
+    
+    return df, columns_order
 
 # 更新数据  
 @app.route('/update_data')
@@ -179,12 +215,12 @@ def stock_price_history():
                                   0)
     
     # 格式化数值
-    数值字段 = ['20_day_ma', 'ATR', 'open', 'close', 'price_change_percentage', 
+    stock_indicator = ['20_day_ma', 'ATR', 'open', 'close', 'price_change_percentage', 
              'eps', 'net_assets_per_share', 'roe', 'operating_cash_flow_per_share', 'gross_profit_margin',
              'pe', 'pb']
     
 
-    for field in 数值字段:
+    for field in stock_indicator:
         if field == 'price_change_percentage':
             all_stock_prices[field] = all_stock_prices[field].apply(lambda x: round(x, 4) * 100 if pd.notna(x) else 0)
         elif field in ['eps', 'net_assets_per_share', 'roe', 'operating_cash_flow_per_share', 'gross_profit_margin']:
@@ -198,7 +234,7 @@ def stock_price_history():
     # print(industry_levels)
     
     return render_template('stock_price_history.html', 
-                           stock_prices=stock_prices_list,  # 传递可序列化的数据
+                           stock_prices=stock_prices_list,  # 传可序列化的数据
                            industry_levels=industry_levels
                            )
 # industry_level_1_names=industry_level_1_names['industry_level_1_name'].tolist()

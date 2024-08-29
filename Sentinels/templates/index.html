@@ -177,40 +177,42 @@
         </div>
 
     </div>
-
 <!-- Market table -->
 <div class="table-container">
 <table>
     <thead>
         <tr>
-            <th>Date</th>
-            {% for col in heatmap_data.columns.levels[1] %}
+            <th>日期</th>
+            {% for col in columns_order %}
                 <th>
-                    <a >{{ col }}</a> 
-<!--                 href="{{ url_for('stock_price_history') }}?industry_level_1={{ col }}"     -->
+                    <a>{{ col }}</a>
                 </th>
             {% endfor %}
-            <th>Index Score</th>  <!-- 新增一列表头 -->
+            <th>指数得分</th>
         </tr>
     </thead>
     <tbody>
         {% for index, row in heatmap_data.iterrows() %}
         <tr>
-            <td>{{ index.strftime('%Y-%m-%d') }}</td>  <!-- 显示日期 -->
-            {% for industry in heatmap_data.columns.levels[1] %}
-                <td style="background-color: rgba(255, 0, 0, {{ row[('industry_score_pct', industry)] }});">
-                    {{ (row[('industry_score_pct', industry)] * 100) | int }}  <!-- 使用 industry_score_pct 显示值 -->
+            <td>{{ index.strftime('%Y-%m-%d') }}</td>
+            {% for industry in columns_order %}
+                <td style="background-color: {% if row[('industry_score_pct', industry)] <= 0.5 %}
+                                               rgba(0, 128, 0, {{ 1 - row[('industry_score_pct', industry)] * 2 }})
+                                             {% else %}
+                                               rgba(255, 0, 0, {{ (row[('industry_score_pct', industry)] - 0.5) * 2 }})
+                                             {% endif %};">
+                    {{ (row[('industry_score_pct', industry)] * 100) | int }}
                 </td>
             {% endfor %}
             <td>
-                <div style=" background-color: lightskyblue; overflow: hidden; position: relative;">
+                <div style="background-color: lightskyblue; overflow: hidden; position: relative;">
                     <div style="width: {{ 100-index_scores.loc[index, 'Index Score']*100 }}%; 
                                  background-color: white; 
                                  text-align: right; 
                                  line-height: 30px; 
-                                 color: black;  /* 设置文本颜色 */
+                                 color: black;
                                  font-weight: bold;">
-                        {{ (index_scores.loc[index, 'Index Score'] * 100) | int }}  <!-- 显示 Index Score 值 -->
+                        {{ (index_scores.loc[index, 'Index Score'] * 100) | int }}
                     </div>
                 </div>
             </td>
@@ -223,23 +225,23 @@
 <div class="pagination">
     <ul class="pagination">
         {% if current_page > 1 %}
-            <li><a href="?page={{ current_page - 1 }}">Previous</a></li>
+            <li><a href="?page={{ current_page - 1 }}&use_level_2={{ use_level_2 }}">上一页</a></li>
         {% else %}
-            <li class="disabled"><span>Previous</span></li>
+            <li class="disabled"><span>上一页</span></li>
         {% endif %}
         
         {% for page_num in range(1, total_pages + 1) %}
             {% if page_num == current_page %}
                 <li class="active"><span>{{ page_num }}</span></li>
             {% else %}
-                <li><a href="?page={{ page_num }}">{{ page_num }}</a></li>
+                <li><a href="?page={{ page_num }}&use_level_2={{ use_level_2 }}">{{ page_num }}</a></li>
             {% endif %}
         {% endfor %}
         
         {% if current_page < total_pages %}
-            <li><a href="?page={{ current_page + 1 }}">Next</a></li>
+            <li><a href="?page={{ current_page + 1 }}&use_level_2={{ use_level_2 }}">下一页</a></li>
         {% else %}
-            <li class="disabled"><span>Next</span></li>
+            <li class="disabled"><span>下一页</span></li>
         {% endif %}
     </ul>
 </div>

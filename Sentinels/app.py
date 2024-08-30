@@ -150,15 +150,14 @@ def update_data():
     return jsonify({'messages': messages})
 
 # 股票价格表
-@app.route('/stock_price_history', methods=['GET'])
-def stock_price_history():
+@app.route('/stock_list', methods=['GET'])
+def stock_list():
     '''
-    股票价格
+    股票列表
     '''
     # 获取筛选条件
     industry_level = request.args.get('industry_level')
     industry_value = request.args.get('industry_value')
-#     industry_level_1 = request.args.get('industry_level_1')
     range_filter = request.args.get('index')
     stock_name = request.args.get('stock_name')
 
@@ -166,7 +165,7 @@ def stock_price_history():
     latest_date_query = f"SELECT MAX(date) FROM {STOCK_PRICE_RESULTS_TABLE_NAME}"
     latest_date = pd.read_sql(latest_date_query, engine).iloc[0, 0]
     
-        # 获取行业层级名称
+    # 获取行业层级名称
     industry_levels_query = """
         SELECT DISTINCT industry_level_1_name, industry_level_2_name, industry_level_3_name, industry_level_4_name 
         FROM csindex_industry
@@ -177,8 +176,6 @@ def stock_price_history():
     conditions = [f"sp.date = '{latest_date}'"]
     if industry_level and industry_value:
         conditions.append(f"ci.{industry_level} = '{industry_value}'")
-#     if industry_level_1 and industry_level_1 != 'None':
-#         conditions.append(f"ci.industry_level_1_name = '{industry_level_1}'")
     if range_filter == "csindex_800":
         conditions.append(f"sp.stock_code IN (SELECT stock_code FROM csindex_800_components)")
     if stock_name and stock_name != 'None':
@@ -219,7 +216,6 @@ def stock_price_history():
              'eps', 'net_assets_per_share', 'roe', 'operating_cash_flow_per_share', 'gross_profit_margin',
              'pe', 'pb']
     
-
     for field in stock_indicator:
         if field == 'price_change_percentage':
             all_stock_prices[field] = all_stock_prices[field].apply(lambda x: round(x, 4) * 100 if pd.notna(x) else 0)
@@ -228,16 +224,13 @@ def stock_price_history():
         else:
             all_stock_prices[field] = all_stock_prices[field].apply(lambda x: round(x, 2) if pd.notna(x) else 0)
 
-    # 将 DataFrame 转换为列表或字
+    # 将 DataFrame 转换为列表或字典
     stock_prices_list = all_stock_prices.to_dict(orient='records')  # 确保数据可以序列化为 JSON
-
-    # print(industry_levels)
     
-    return render_template('stock_price_history.html', 
+    return render_template('stock_list.html', 
                            stock_prices=stock_prices_list,  # 传可序列化的数据
                            industry_levels=industry_levels
                            )
-# industry_level_1_names=industry_level_1_names['industry_level_1_name'].tolist()
 
 # 获取股票历史数据
 @app.route('/get_stock_history')

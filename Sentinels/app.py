@@ -21,6 +21,7 @@ STOCK_DAILY_TABLE_NAME = config.TABLE_NAMES['STOCK_DAILY']# 股票日线数据
 STOCK_PRICE_RESULTS_TABLE_NAME = config.TABLE_NAMES['STOCK_PRICE_RESULTS']# 股票计算结果
 SCORE_INDUSTRY_TABLE_NAME = config.TABLE_NAMES['SCORE_INDUSTRY']# 股票评分  
 STOCK_YJBB_TABLE_NAME = config.TABLE_NAMES['STOCK_YJBB']# 业绩报表
+PAPER_TRADING_TABLE_NAME = config.TABLE_NAMES['PAPER_TRADING']  # 新增的表名
 
 # 创建数据库连接引擎
 engine = create_engine(f"mysql+pymysql://{USER}:{PASSWORD}@{HOST}/{DATABASE}")
@@ -30,7 +31,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    # 获取 use_level_2 参数，决定是否使用二级行业
+    # 获取 use_level_2 参数，定是否使用二级行业
     use_level_2 = request.args.get('use_level_2', 'false').lower() == 'true'
     
     # 获取并处理行业评分数据
@@ -81,7 +82,7 @@ def index():
 def get_processed_score_industry_data(use_level_2):
     '''
     获取处理后的行业数据: 
-    1. 根据 use_level_2 参数选择查询的列
+    1. 根据 use_level_2 参数选择查询列
     2. 将查询结果转换为 DataFrame
     3. 将 DataFrame 转换为分组后的 DataFrame
     4. 返回分组后的 DataFrame
@@ -265,6 +266,39 @@ def get_stock_history():
 
     return jsonify(result)
 
+# 添加股票到模拟交易持仓表
+@app.route('/add_to_portfolio', methods=['POST'])
+def add_to_portfolio():
+    data = request.json
+    date = data['date']
+    code = data['code']
+    close = float(data['close'])
+    ATR = float(data['ATR'])
+    quantity = int(data['quantity']) 
+    loss1 = float(data['loss1'])    
+    loss2 = float(data['loss2'])
+    profit1 = float(data['profit1'])
+    profit2 = float(data['profit2'])
+    trade_date = data['trade_date']
+
+    try:
+
+        engine.execute(f"""
+            INSERT INTO {PAPER_TRADING_TABLE_NAME} (date, stock_code, quantity, close, ATR, loss1, loss2, profit1, profit2, trade_date, is_position)
+            VALUES ('{date}', '{code}', {quantity}, {close}, {ATR}, {loss1}, {loss2}, {profit1}, {profit2}, '{trade_date}', 1)
+            ON DUPLICATE KEY UPDATE
+                quantity = VALUES(quantity),
+                ATR = VALUES(ATR),
+                loss1 = VALUES(loss1),
+                loss2 = VALUES(loss2),
+                profit1 = VALUES(profit1),
+                profit2 = VALUES(profit2)
+        """)
+        
+        return jsonify({"success": True})
+    except Exception as e:
+        print(e)
+        return jsonify({"success": False, "message": str(e)})
 
 # 直接在主线程中运行 Flask 应用
 if __name__ == '__main__':

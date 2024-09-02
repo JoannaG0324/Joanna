@@ -220,7 +220,7 @@
         <table id="stock-table">
             <thead>
                 <tr>
-                    <th onclick="sortTable('date')">日期</th>
+                    <th onclick="sortTable('date')">Date</th>
                     <th>Level 1</th>
                     <th>Level 2</th>
                     <th>Level 3</th>
@@ -229,9 +229,9 @@
                     <th>Name</th>
                     <th onclick="sortTable('open')">Open</th>
                     <th onclick="sortTable('close')">Close</th>
-                    <th onclick="sortTable('change_pct')">Change Pct</th>
                     <th onclick="sortTable('ma_20')">MA_20</th>
                     <th onclick="sortTable('ATR')">ATR</th>
+                    <th onclick="sortTable('change_pct')">Change pct</th>
                     <th onclick="sortTable('eps')">EPS</th>
                     <th onclick="sortTable('pe')">PE</th>
                     <th onclick="sortTable('net_assets_per_share')">NAV</th>
@@ -240,6 +240,7 @@
                     <th onclick="sortTable('operating_cash_flow_per_share')">Cash Flow</th>
                     <th onclick="sortTable('gross_profit_margin')">Gross Profit</th> 
                     <th onclick="sortTable('latest_announcement_date')">Report Date</th> 
+                    <th>Action</th> <!-- 新增列 -->
                 </tr>
             </thead>
             <tbody id="table-body">
@@ -247,7 +248,7 @@
             </tbody>
         </table>
     </div>
-        <!-- Bootstrap Modal -->
+    <!-- Bootstrap Modal 历史走势图 -->
     <div class="modal fade" id="stockModal" tabindex="-1" role="dialog" aria-labelledby="stockModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document"> <!-- 使用 modal-lg 类 -->
             <div class="modal-content">
@@ -265,6 +266,68 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加股票到投资组合的模态 -->
+    <div class="modal fade" id="addToPortfolioModal" tabindex="-1" role="dialog" aria-labelledby="addToPortfolioModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addToPortfolioModalLabel">Add to Portfolio</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p>Date: <span id="modal-date"></span></p>
+                            <p>Code: <span id="modal-code"></span></p>
+                            <p>Name: <span id="modal-name"></span></p>
+                            <div class="form-group">
+                                <label for="trade-date">Trade Date:</label>
+                                <input type="date" class="form-control" id="trade-date" value="{{ today_date }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="close">Close:</label>
+                                <input type="number" class="form-control" id="modal-close" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="ATR">ATR:</label>
+                                <input type="number" class="form-control" id="modal-ATR" step="0.01" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="loss1">Loss1:</label>
+                                <input type="number" class="form-control" id="modal-loss1" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="loss2">Loss2:</label>
+                                <input type="number" class="form-control" id="modal-loss2" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="profit1">Profit1:</label>
+                                <input type="number" class="form-control" id="modal-profit1" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="profit2">Profit2:</label>
+                                <input type="number" class="form-control" id="modal-profit2" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="quantity">Quantity:</label>
+                                <input type="number" class="form-control" id="quantity" min="100" value="1000">
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirm-add">Confirm</button>
                 </div>
             </div>
         </div>
@@ -311,7 +374,7 @@
                                 myTool_20d: {
                                     show: true,
                                     title: '20D',
-                                    icon: 'path://M613.449865 887.558615l-57.825401 68.910306-17.419136-24.519604c-8.786192-13.792278-14.200938-27.584556-15.120423-41.376834-0.306495-4.597426 0.40866-10.727327 0.153247-15.27367l20.177592-300.262995 48.170807-59.766537 42.347401 59.766537-20.484087 312.522797z m28.452959-434.967574l-50.265191 62.831487-40.3041-62.831487 16.755063-266.497456c2.196548-18.389704 2.656291-29.117031 3.371446-35.246932 1.379228-13.741195 6.334231-24.519605 15.835578-35.19585l30.445176-36.728325 43.930959 67.377831-19.768931 306.290732z m208.978549 448.810934l48.885962 73.507733-25.183677 30.700588c-10.420832 13.741195-22.57847 18.389704-44.084207 18.389704h-199.22179c-21.505737 0-34.327447-6.129901-43.062556-18.389704l-20.126509-30.700588 60.890352-73.507733h221.902425zM678.426818 124.845655l-47.251322-65.845356 21.812232-30.700588c13.536865-18.389704 26.613988-26.05208 43.573381-26.052081h207.139579c15.835578 0 31.262496 10.727327 41.325751 26.052081l17.725631 29.11703-59.051382 67.377831h-225.27387z m211.379428 450.241245l50.316272-61.24793 40.201936 61.24793-16.806146 265.016063c-0.970568 19.922179-2.45196 32.181981-2.145466 36.779408-1.379228 13.741195-6.436396 22.936047-16.959393 35.195849l-32.794971 35.19585-41.325751-61.24793 19.513519-310.93924z m28.861618-428.837673l58.898134-68.910307 13.84336 21.454655c10.063255 15.324753 15.478001 29.117031 16.448569 44.390701 0.40866 6.129901 0.81732 12.259802 0.051082 18.389704l-18.542951 291.017061-51.49117 61.299012-39.078121-61.299012 19.871097-306.341814zM119.890652 883.727427l-97.05677 118.000599 23.80445-364.524793c0.561908-9.194852 1.123815-18.389704 2.86062-26.052081 1.787888-7.662377 3.626858-13.741195 6.691809-18.389703 0 0 6.283149-7.662377 16.601816-21.454655l30.087599-39.793275 37.188067 53.585553L119.890652 883.727427z m254.135488 15.375835l41.121421 61.299013-48.937045 61.299012H35.298015l101.296617-122.546942 237.431508-0.051083z m24.928265-347.718647c-12.41305 16.857228-22.271974 21.454654-48.119725 21.454655H157.283049l-40.968173-59.766537 32.028734-44.390702c4.137683-6.129901 9.450264-10.727327 14.86501-13.792277 5.414746-3.013868 9.807842-4.597426 15.426918-4.597426h212.707573l40.968173 59.766537-33.356879 41.32575zM173.322957 122.546942l-40.968173-59.766537L180.065849 0h229.564801c22.476304 0 33.152549 7.662377 45.667764 27.584556l15.06934 24.519604-57.365659 70.442782H173.322957z m251.12162 19.871097l58.489475-70.442782 19.973261 30.649506c2.45196 3.064951 5.210416 10.727327 8.122119 21.454654 1.43031 4.597426 1.736805 9.245934 1.992218 13.792278 0.40866 6.129901-0.051083 16.857228-0.306495 30.649506l-15.835578 226.653098c-1.63464 27.584556-5.414746 38.311883-19.871097 58.182979l-31.211413 39.844358-40.866008-58.182979 19.513519-292.600618z', // 自定义图标
+                                    icon: 'path://M613.449865 887.558615l-57.825401 68.910306-17.419136-24.519604c-8.786192-13.792278-14.200938-27.584556-15.120423-41.376834-0.306495-4.597426 0.40866-10.727327 0.153247-15.27367l20.177592-300.262995 48.170807-59.766537 42.347401 59.766537-20.484087 312.522797z m28.452959-434.967574l-50.265191 62.831487-40.3041-62.831487 16.755063-266.497456c2.196548-18.389704 2.656291-29.117031 3.371446-35.246932 1.379228-13.741195 6.334231-24.519605 15.835578-35.19585l30.445176-36.728325 43.930959 67.377831-19.768931 306.290732z m208.978549 448.810934l48.885962 73.507733-25.183677 30.700588c-10.420832 13.741195-22.57847 18.389704-44.084207 18.389704h-199.22179c-21.505737 0-34.327447-6.129901-43.062556-18.389704l-20.126509-30.700588 60.890352-73.507733h221.902425zM678.426818 124.845655l-47.251322-65.845356 21.812232-30.700588c13.536865-18.389704 26.613988-26.05208 43.573381-26.052081h207.139579c15.835578 0 31.262496 10.727327 41.325751 26.052081l17.725631 29.11703-59.051382 77.377831h-225.27387z m211.379428 450.241245l50.316272-61.24793 40.201936 61.24793-16.806146 265.016063c-0.970568 19.922179-2.45196 32.181981-2.145466 36.779408-1.379228 13.741195-6.436396 22.936047-16.959393 35.195849l-32.794971 35.19585-41.325751-61.24793 19.513519-310.93924z m28.861618-428.837673l58.898134-68.910307 13.84336 21.454655c10.063255 15.324753 15.478001 29.117031 16.448569 44.390701 0.40866 6.129901 0.81732 12.259802 0.051082 18.389704l-18.542951 291.017061-51.49117 61.299012-39.078121-61.299012 19.871097-306.341814zM119.890652 883.727427l-97.05677 118.000599 23.80445-364.524793c0.561908-9.194852 1.123815-18.389704 2.86062-26.052081 1.787888-7.662377 3.626858-13.741195 6.691809-18.389703 0 0 6.283149-7.662377 16.601816-21.454655l30.087599-39.793275 37.188067 53.585553L119.890652 883.727427z m254.135488 15.375835l41.121421 61.299013-48.937045 61.299012H35.298015l101.296617-122.546942 237.431508-0.051083z m24.928265-347.718647c-12.41305 16.857228-22.271974 21.454654-48.119725 21.454655H157.283049l-40.968173-59.766537 32.028734-44.390702c4.137683-6.129901 9.450264-10.727327 14.86501-13.792277 5.414746-3.013868 9.807842-4.597426 15.426918-4.597426h212.707573l40.968173 59.766537-33.356879 41.32575zM173.322957 122.546942l-40.968173-59.766537L180.065849 0h229.564801c22.476304 0 33.152549 7.662377 45.667764 27.584556l15.06934 24.519604-57.365659 70.442782H173.322957z m251.12162 19.871097l58.489475-70.442782 19.973261 30.649506c2.45196 3.064951 5.210416 10.727327 8.122119 21.454654 1.43031 4.597426 1.736805 9.245934 1.992218 13.792278 0.40866 6.129901-0.051083 16.857228-0.306495 30.649506l-15.835578 226.653098c-1.63464 27.584556-5.414746 38.311883-19.871097 58.182979l-31.211413 39.844358-40.866008-58.182979 19.513519-292.600618z m28.861618-428.837673l58.898134-68.910307 13.84336 21.454655c10.063255 15.324753 15.478001 29.117031 16.448569 44.390701 0.40866 6.129901 0.81732 12.259802 0.051082 18.389704l-18.542951 291.017061-51.49117 61.299012-39.078121-61.299012 19.871097-306.341814zM173.322957 122.546942l-40.968173-59.766537L180.065849 0h229.564801c22.476304 0 33.152549 7.662377 45.667764 27.584556l15.06934 24.519604-57.365659 70.442782H173.322957z m251.12162 19.871097l58.489475-70.442782 19.973261 30.649506c2.45196 3.064951 5.210416 10.727327 8.122119 21.454654 1.43031 4.597426 1.736805 9.245934 1.992218 13.792278 0.40866 6.129901-0.051083 16.857228-0.306495 30.649506l-15.835578 226.653098c-1.63464 27.584556-5.414746 38.311883-19.871097 58.182979l-31.211413 39.844358-40.866008-58.182979 19.513519-292.600618z m28.861618-428.837673l58.898134-68.910307 13.84336 21.454655c10.063255 15.324753 15.478001 29.117031 16.448569 44.390701 0.40866 6.129901 0.81732 12.259802 0.051082 18.389704l-18.542951 291.017061-51.49117 61.299012-39.078121-61.299012 19.871097-306.341814z', // 自定义图标
                                     onclick: function () {
                                         myChart.dispatchAction({
                                             type: 'dataZoom',
@@ -525,11 +588,22 @@ function sortTable(column) {
                 <td style="text-align: right;">${parseFloat(row.operating_cash_flow_per_share).toFixed(2)}</td>
                 <td style="text-align: right;">${parseFloat(row.gross_profit_margin).toFixed(2)}%</td>
                 <td style="text-align: right;">${row.latest_announcement_date}</td>
-            `;
-        }
-        tableBody.appendChild(tr);
-    });
-}  
+                <td>
+                   <button class="btn btn-sm btn-primary add-to-portfolio" 
+                            data-date="${row.date}" 
+                            data-code="${row.stock_code}" 
+                            data-name="${row.stock_name}" 
+                            data-close="${row.close.toFixed(2)}"
+                            data-ATR="${row.ATR.toFixed(2)}"
+                            onclick="event.stopPropagation()">
+                        Add
+                    </button>   
+                </td>
+                `;  
+            }
+            tableBody.appendChild(tr);
+        });
+    }  
         // ///////////
 let filters = {
     level1: [],
@@ -730,6 +804,99 @@ function clearForm() {
     // 提交表单
     form.submit();
 }
+
+// 在 document.addEventListener('DOMContentLoaded', ...) 中添加以下代码
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.add-to-portfolio').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation(); // 阻止事件冒泡
+
+            const date = button.dataset.date;
+            const code = button.dataset.code;
+            const name = button.dataset.name;
+            const close = button.dataset.close;
+            const ATR = button.dataset.atr;  // 获取 ATR 值
+
+            // 填充模态框
+            document.getElementById('modal-date').textContent = date;
+            document.getElementById('modal-code').textContent = code;
+            document.getElementById('modal-name').textContent = name;
+            document.getElementById('modal-close').value = close;
+            document.getElementById('modal-ATR').value = ATR;  // 设置 ATR 值
+
+            // 获取并设置 trade_date 为选择的日期
+            const tradeDateInput = document.getElementById('trade-date');
+            tradeDateInput.value = new Date().toISOString().split('T')[0]; // 默认显示今天的日期
+            tradeDateInput.addEventListener('change', function() {
+                tradeDateInput.value = this.value;
+            });
+
+            // 计算并填充其他字段
+            updateCalculatedFields();
+
+            // 显示模态框
+            $('#addToPortfolioModal').modal('show');
+        });
+    });
+});
+
+// 处理确认添加
+document.getElementById('confirm-add').addEventListener('click', function() {
+    const date = document.getElementById('modal-date').textContent;
+    const code = document.getElementById('modal-code').textContent;
+    const close = parseFloat(document.getElementById('modal-close').value);
+    const ATR = parseFloat(document.getElementById('modal-ATR').value);
+    const quantity = document.getElementById('quantity').value;
+    const tradeDate = document.getElementById('trade-date').value;  // 获取 trade_date 值
+
+    // 发送添加请求到后端
+    fetch('/add_to_portfolio', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            date: date,
+            code: code,
+            close: close,
+            ATR: ATR,
+            quantity: quantity,
+            trade_date: tradeDate,  // 传递 trade_date
+            loss1: (close - 0.2 * ATR).toFixed(2),
+            loss2: (close - 1.5 * ATR).toFixed(2),
+            profit1: (close + 1.5 * ATR).toFixed(2),
+            profit2: (close + 0.2 * ATR).toFixed(2)
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Successfully added to portfolio');
+        } else {
+            alert('Failed to add to portfolio: ' + data.message);
+        }
+        $('#addToPortfolioModal').modal('hide');
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        alert('An error occurred while adding to portfolio');
+    });
+});
+
+// 实时计算字段
+function updateCalculatedFields() {
+    const close = parseFloat(document.getElementById('modal-close').value);
+    const ATR = parseFloat(document.getElementById('modal-ATR').value);
+    if (!isNaN(close) && !isNaN(ATR)) {
+        document.getElementById('modal-loss1').value = (close - 0.2 * ATR).toFixed(2);
+        document.getElementById('modal-loss2').value = (close - 1.5 * ATR).toFixed(2);
+        document.getElementById('modal-profit1').value = (close + 1.5 * ATR).toFixed(2);
+        document.getElementById('modal-profit2').value = (close + 0.2 * ATR).toFixed(2);
+    }
+}
+
+// 监听 close 字段的变化
+document.getElementById('modal-close').addEventListener('input', updateCalculatedFields);
     </script>
 
 </body>

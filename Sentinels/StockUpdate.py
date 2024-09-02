@@ -307,27 +307,27 @@ def data_upate():
     messages = []
     
     # 1. 更新股票基础信息
-    # msg = get_stock_info(engine)
-    # messages.append(msg)
+    msg = get_stock_info(engine)
+    messages.append(msg)
 
-    # # 2. 获取当前日期
-    # end_date = pd.Timestamp.today().strftime('%Y%m%d')
+    # 2. 获取当前日期
+    end_date = pd.Timestamp.today().strftime('%Y%m%d')
 
-    # # 3. 更新所有股票的股价数据
-    # msg = get_stock_history(engine, end_date)
-    # messages.append(msg)
+    # 3. 更新所有股票的股价数据
+    msg = get_stock_history(engine, end_date)
+    messages.append(msg)
 
-    # # 4. 计算价格
-    # msg = calculate_price(engine)
-    # messages.append(msg)
+    # 4. 计算价格
+    msg = calculate_price(engine)
+    messages.append(msg)
 
-    # # # 5. 重新计算行业得分
-    # msg = score_industry(fetch_com_ind_relation(engine),engine)
-    # messages.append(msg)
+    # # 5. 重新计算行业得分
+    msg = score_industry(fetch_com_ind_relation(engine),engine)
+    messages.append(msg)
 
     # 更新业绩报表数据
-    msg = update_stock_yjbb(config.YJBB_DATE, engine)
-    messages.append(msg)
+    # msg = update_stock_yjbb(config.YJBB_DATE, engine)
+    # messages.append(msg)
 
     return messages
 

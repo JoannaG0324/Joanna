@@ -275,7 +275,7 @@ def add_to_portfolio():
     close = float(data['close'])
     ATR = float(data['ATR'])
     quantity = int(data['quantity']) 
-    loss1 = float(data['loss1'])    
+    loss1 = float(data['loss1'])     
     loss2 = float(data['loss2'])
     profit1 = float(data['profit1'])
     profit2 = float(data['profit2'])

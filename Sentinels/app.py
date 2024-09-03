@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
+import json
 from sqlalchemy import create_engine
 import math
 import time
@@ -306,12 +307,28 @@ def expected_value():
     '''
     显示 PAPER_TRADING 表的数据
     '''
-    query = f"SELECT * FROM {PAPER_TRADING_TABLE_NAME} WHERE is_position=1"
+    query = f"""
+    SELECT pt.*, sd.close AS latest_close, sd.date AS latest_date 
+    FROM {PAPER_TRADING_TABLE_NAME} pt
+    LEFT JOIN (
+        SELECT SUBSTRING(stock_code, 3) AS stock_code, close, date
+        FROM {STOCK_DAILY_TABLE_NAME}
+        WHERE date = (
+            SELECT MAX(date)
+            FROM {STOCK_DAILY_TABLE_NAME}
+        )
+    ) sd ON pt.stock_code = sd.stock_code
+    WHERE pt.is_position = 1
+    """
     paper_trading_data = pd.read_sql(query, engine)
 
     # 将 DataFrame 转换为列表或字典
     paper_trading_list = paper_trading_data.to_dict(orient='records')  # 确保数据可以序列化为 JSON
 
+    if not paper_trading_list:
+        # 如果列表为空，可以返回一个错误页面或者带有默认值的页面
+        return render_template('expected_value.html', paper_trading_data=None)
+    
     return render_template('expected_value.html', paper_trading_data=paper_trading_list)
 
 # EV: delete position data
@@ -323,7 +340,8 @@ def delete_from_portfolio():
 
     try:
         engine.execute(f"""
-            DELETE FROM {PAPER_TRADING_TABLE_NAME}
+            UPDATE {PAPER_TRADING_TABLE_NAME}
+            SET is_position = 2
             WHERE stock_code = '{stock_code}' AND trade_date = '{trade_date}'
         """)
         

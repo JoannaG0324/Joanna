@@ -230,9 +230,9 @@
                     <th>Name</th>
                     <th onclick="sortTable('open')">Open</th>
                     <th onclick="sortTable('close')">Close</th>
-                    <th onclick="sortTable('ma_20')">MA_20</th>
+                    <th onclick="sortTable('price_change_percentage')">Change pct</th>
+                    <th onclick="sortTable('20_day_ma')">MA_20</th>
                     <th onclick="sortTable('ATR')">ATR</th>
-                    <th onclick="sortTable('change_pct')">Change pct</th>
                     <th onclick="sortTable('eps')">EPS</th>
                     <th onclick="sortTable('pe')">PE</th>
                     <th onclick="sortTable('net_assets_per_share')">NAV</th>
@@ -272,7 +272,7 @@
         </div>
     </div>
 
-    <!-- 添加股票到投资组合的模态 -->
+    <!-- 添加股票到投��组合的模态 -->
     <div class="modal fade" id="addToPortfolioModal" tabindex="-1" role="dialog" aria-labelledby="addToPortfolioModalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -338,7 +338,6 @@
     <script src="{{ url_for('static', filename='js/k-line chart.js') }}"></script>
 
     <script>
-
         let data = []; // 存储所有的表格数据
         let filteredData = []; // 存储筛选后的表格数据
         let currentSort = { column: 'date', ascending: true }; // 默认按日期升序排序
@@ -411,7 +410,7 @@ function sortTable(column) {
             tableBody.appendChild(tr);
         });
     }  
-        ///////////
+// 定义
 let filters = {
     level1: [],
     level2: [],
@@ -419,40 +418,40 @@ let filters = {
     level4: []
 }; // 存储行业层级数据
 
-// 加载数据
-function loadData() {
-    data = [
-        // 从后端获取的数据数组
-        {% for row in stock_prices %}
-        {
-            date: '{{ row['date'] }}',
-            industry_level_1_name: '{{ row['industry_level_1_name'] }}',
-            industry_level_2_name: '{{ row['industry_level_2_name'] }}',
-            industry_level_3_name: '{{ row['industry_level_3_name'] }}',
-            industry_level_4_name: '{{ row['industry_level_4_name'] }}',
-            stock_code: '{{ row['stock_code'] }}',
-            stock_name: '{{ row['stock_name'] }}',
-            open: {{ row['open'] }},
-            close: {{ row['close'] }},
-            price_change_percentage: {{ row['price_change_percentage'] }},
-            '20_day_ma': {{ row['20_day_ma'] }},
-            ATR: {{ row['ATR'] }},
-            eps: {{ row['eps'] }},
-            pe: {{ row['pe'] }},
-            net_assets_per_share: {{ row['net_assets_per_share'] }},
-            roe: {{ row['roe'] }},
-            pb: {{ row['pb'] }},
-            operating_cash_flow_per_share: {{ row['operating_cash_flow_per_share'] }},
-            gross_profit_margin: {{ row['gross_profit_margin'] }},
-            latest_announcement_date: '{{ row['latest_announcement_date'] }}'
-        },
-        {% endfor %}
-    ];
-
-//     console.log('Data loaded:', data); // 调试信息
-    populateFilters(); // 填充筛选下拉菜单
-    filterData(); // 默认加载所有数据
-}
+        // 加载数据
+        function loadData() {
+            data = [
+                {% for row in stock_prices %}
+                {
+                    date: "{{ row['date'] }}",
+                    industry_level_1_name: "{{ row['industry_level_1_name'] }}",
+                    industry_level_2_name: "{{ row['industry_level_2_name'] }}",
+                    industry_level_3_name: "{{ row['industry_level_3_name'] }}",
+                    industry_level_4_name: "{{ row['industry_level_4_name'] }}",
+                    stock_code: "{{ row['stock_code'] }}",
+                    stock_name: "{{ row['stock_name'] }}",
+                    open: {{ row['open'] }},
+                    close: {{ row['close'] }},
+                    price_change_percentage: {{ row['price_change_percentage'] }},
+                    '20_day_ma': {{ row['20_day_ma'] }},
+                    ATR: {{ row['ATR'] }},
+                    eps: {{ row['eps'] }},
+                    pe: {{ row['pe'] }},
+                    net_assets_per_share: {{ row['net_assets_per_share'] }},
+                    pb: {{ row['pb'] }},
+                    roe: {{ row['roe'] }},
+                    operating_cash_flow_per_share: {{ row['operating_cash_flow_per_share'] }},
+                    gross_profit_margin: {{ row['gross_profit_margin'] }},
+                    latest_announcement_date: "{{ row['latest_announcement_date'] }}"
+                }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ];
+        
+        //     console.log('Data loaded:', data); // 调试信息
+            populateFilters(); // 填充筛选下拉菜单
+            filterData(); // 默认加载所有数据
+        }
+        
 
 // 填充筛选下拉菜单
 function populateFilters() {
@@ -565,7 +564,7 @@ function updateLevel4() {
 
 // 筛选数据 （在筛选时使用 filteredData 而不是 data）
 function filterData() {
-    // 假设你有一系列筛选条件
+    // 假设你有一系��筛选条件
     const selectedLevel1 = document.getElementById('industry-level-1').value;
     const selectedLevel2 = document.getElementById('industry-level-2').value;
     const selectedLevel3 = document.getElementById('industry-level-3').value;
@@ -671,10 +670,10 @@ document.getElementById('confirm-add').addEventListener('click', function() {
             ATR: ATR,
             quantity: quantity,
             trade_date: tradeDate,  // 传递 trade_date
-            loss1: (close - 0.2 * ATR).toFixed(2),
+            loss1: (close - 2 * ATR).toFixed(2),
             loss2: (close - 1.5 * ATR).toFixed(2),
             profit1: (close + 1.5 * ATR).toFixed(2),
-            profit2: (close + 0.2 * ATR).toFixed(2)
+            profit2: (close + 2 * ATR).toFixed(2)
         }),
     })
     .then(response => response.json())

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Expected Value</title>
+    <style>
+        /* 全局样式 */
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background-color: #f8f8f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 导航栏样式 */
+        nav {
+            background-color: #2c3e50;
+            padding: 10px 0;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        nav a {
+            margin: 0 15px;
+            text-decoration: none;
+            color: #ecf0f1;
+            font-weight: bold;
+            transition: color 0.2s ease;
+        }
+        nav a:hover {
+            color: #3498db;
+        }
+
+        /* 表格容器样式 */
+        .table-container {
+            width: 100%;
+            max-height: 70vh;
+            overflow-y: auto;
+            margin: 15px auto;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.08);
+            border-radius: 6px;
+        }
+
+        /* 表格样式 */
+        table {
+            width: 50%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 8px;
+            text-align: left;
+            font-size: 0.9em;
+        }
+        th {
+            background-color: #f0f0f0;
+            color: #333;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+    <h1>Expected Value</h1>
+    <table id="table-container">
+        <thead>
+            <tr>
+                <th>Trade Date</th>
+                <th>Stock Code</th>
+                <th>Quantity</th>
+                <th>Cost</th>
+                <th>ATR</th>
+                <th>Loss1</th>
+                <th>Loss2</th>
+                <th>Profit1</th>
+                <th>Profit2</th>
+                <th>Operation</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in paper_trading_data %}
+            <tr>
+                <td>{{ row.trade_date }}</td>
+                <td>{{ row.stock_code }}</td>
+                <td>{{ row.quantity }}</td>
+                <td>{{ row.close }}</td>
+                <td>{{ row.ATR }}</td>
+                <td>{{ row.loss1 }}</td>
+                <td>{{ row.loss2 }}</td>
+                <td>{{ row.profit1 }}</td>
+                <td>{{ row.profit2 }}</td>
+                <td>
+                    <button onclick="deleteRow('{{ row.stock_code }}', '{{ row.trade_date }}')">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script>
+        // delete postion data: confirm
+        function confirmDelete(stock_code, trade_date) {
+            if (confirm('确定要删除这条记录吗？')) {
+                deleteRow(stock_code, trade_date);
+            }
+        }
+        // delete postion data
+        function deleteRow(stock_code, trade_date) {
+            fetch('/delete_from_portfolio', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ stock_code: stock_code, trade_date: trade_date })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('删除失败: ' + data.message);
+                }
+            });
+        }
+
+
+    </script>
+</body>
+</html>

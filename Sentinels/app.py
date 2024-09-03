@@ -300,6 +300,37 @@ def add_to_portfolio():
         print(e)
         return jsonify({"success": False, "message": str(e)})
 
+# EV: show expected value
+@app.route('/expected_value')
+def expected_value():
+    '''
+    显示 PAPER_TRADING 表的数据
+    '''
+    query = f"SELECT * FROM {PAPER_TRADING_TABLE_NAME} WHERE is_position=1"
+    paper_trading_data = pd.read_sql(query, engine)
+
+    # 将 DataFrame 转换为列表或字典
+    paper_trading_list = paper_trading_data.to_dict(orient='records')  # 确保数据可以序列化为 JSON
+
+    return render_template('expected_value.html', paper_trading_data=paper_trading_list)
+
+# EV: delete position data
+@app.route('/delete_from_portfolio', methods=['POST'])
+def delete_from_portfolio():
+    data = request.json
+    stock_code = data['stock_code']
+    trade_date = data['trade_date']
+
+    try:
+        engine.execute(f"""
+            DELETE FROM {PAPER_TRADING_TABLE_NAME}
+            WHERE stock_code = '{stock_code}' AND trade_date = '{trade_date}'
+        """)
+        
+        return jsonify({"success": True})
+    except Exception as e:
+        print(e)
+        return jsonify({"success": False, "message": str(e)})
 # 直接在主线程中运行 Flask 应用
 if __name__ == '__main__':
 #     app.run(port=5000)

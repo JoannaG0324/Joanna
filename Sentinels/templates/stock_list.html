@@ -180,10 +180,11 @@
     </style>
 </head>
 <body>
-    <nav>
+    <!-- <nav>
         <a href="{{ url_for('index') }}">Market</a>
         <a href="{{ url_for('stock_list') }}">Stock</a>
-    </nav>
+    </nav> -->
+    {% include 'navbar.html' %}
     
     <div class="search-container">       
         <form id="search-form" method="get" action="/stock_list">

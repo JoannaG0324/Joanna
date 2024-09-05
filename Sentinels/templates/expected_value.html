@@ -50,7 +50,7 @@
 
         /* 表格样式 */
         table {
-            width: 50%;
+            width: 70%;
             border-collapse: collapse;
         }
         th, td {
@@ -69,6 +69,32 @@
             background-color: #f5f5f5;
             cursor: pointer;
         }
+        button {
+            padding: 6px 10px;
+            border: none;
+            background-color: #3498db;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .modal-header.sell-modal-header {
+            background-color: #f6f8f9;
+            color: white;
+        }
+        .sell-modal-close {
+            color: white;
+        }
+        .sell-modal-body .form-group {
+            margin-bottom: 1rem;
+        }
+        .sell-modal-footer {
+            justify-content: space-between;
+        }
     </style>
 </head>
 <body>
@@ -80,6 +106,7 @@
                 <tr>
                     <th>Trade Date</th>
                     <th>Stock Code</th>
+                    <th>Stock Name</th>
                     <th>Quantity</th>
                     <th>Cost</th>
                     <th>ATR</th>
@@ -89,6 +116,7 @@
                     <th>Profit2</th>
                     <th>Price</th>
                     <th>%Change</th>
+                    <th>remark</th>
                     <th>Operation</th>
                 </tr>
             </thead>
@@ -97,6 +125,7 @@
                 <tr>
                     <td>{{ row.trade_date }}</td>
                     <td>{{ row.stock_code }}</td>
+                    <td>{{ row.stock_name }}</td>
                     <td style="text-align: right;">{{ row.quantity }}</td>
                     <td style="text-align: right;">{{ "%.2f"|format(row.close) }}</td>
                     <td style="text-align: right;">{{ "%.2f"|format(row.ATR) }}</td>
@@ -106,8 +135,14 @@
                     <td style="text-align: right; background-color: {{ 'rgba(255, 0, 0, 0.3)' if row.latest_close >= row.profit2 else 'transparent' }};">{{ "%.2f"|format(row.profit2) }} ({{ "{:.2f}%".format((row.profit2 / row.close - 1) * 100) }})</td>
                     <td style="text-align: right;">{{ "%.2f"|format(row.latest_close) }}</td>
                     <td style="background-color: {{ 'rgba(255, 0, 0, ' + ((row.latest_close / row.close - 1) * 10)|string + ')' if (row.latest_close / row.close - 1) > 0 else 'rgba(0, 128, 0, ' + (-(row.latest_close / row.close - 1) * 20)|string + ')' if (row.latest_close / row.close - 1) < 0 else 'white' }}; text-align: right;">{{ "{:.2f}%".format((row.latest_close / row.close - 1) * 100) }}</td>
-                    <td>    
-                        <button onclick="confirmDelete('{{ row.stock_code }}', '{{ row.trade_date }}')">Delete</button>
+                    <td>{{ row.remark }}</td>
+                    <td>
+                        {% if row.is_position == 1 %}
+                            <button id ="button" onclick="showSellModal('{{ row.stock_code }}', '{{ row.trade_date }}', '{{ row.latest_close }}', '{{ row.remark }}')">Sell</button>
+                        {% else %}
+                            <button id ="button" disabled>...</button>
+                        {% endif %}
+                        <button id="button" onclick="confirmDelete('{{ row.stock_code }}', '{{ row.trade_date }}')">Delete</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -117,10 +152,87 @@
         <h1>No data available</h1>
     {% endif %}
 
+    <!-- sell modal -->
+    <div class="modal fade" id="sellModal" tabindex="-1" role="dialog" aria-labelledby="sellModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sellModalLabel">确认卖出</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="关闭">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="modalStockCode">股票代码: </label>
+                        <span id="modalStockCode"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="modalTradeDate">交易日期: </label>
+                        <span id="modalTradeDate"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="modalLatestClose">最新价格:</label>
+                        <input type="number" class="form-control" id="modalLatestClose" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="modalRemark">备注:</label>
+                        <textarea class="form-control" id="modalRemark" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmSell()">确认卖出</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        
+        // 显示卖出模态框
+        function showSellModal(stock_code, trade_date, latest_close, remark) {
+            currentStockCode = stock_code;
+            currentTradeDate = trade_date;
+            currentLatestClose = latest_close;
+            currentRemark = remark || ''; // 如果 remark 为 undefined，则设置为空字符串
+            document.getElementById('modalStockCode').textContent = stock_code;
+            document.getElementById('modalTradeDate').textContent = trade_date;
+            document.getElementById('modalLatestClose').value = latest_close;
+            document.getElementById('modalRemark').value = remark;
+
+            $('#sellModal').modal('show');
+        }
+
+        // 确认卖出
+        function confirmSell() {
+            const latestClose = document.getElementById('modalLatestClose').value;
+            const updatedRemark = document.getElementById('modalRemark').value; // 获取更新后的备注
+            sellRow(currentStockCode, currentTradeDate, latestClose, updatedRemark);
+        }
+
+        // 执行卖出操作
+        function sellRow(stock_code, trade_date, latest_close, remark) {
+            fetch('/remove_from_portfolio', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ stock_code: stock_code, trade_date: trade_date, latest_close: latest_close, remark: remark })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('卖出失败：' + data.message);
+                }
+            });
+        }
+
         // delete postion data: confirm
         function confirmDelete(stock_code, trade_date) {
-            if (confirm('Are you sure you want to delete this record?')) {
+            if (confirm('Delete this record?')) {
                 deleteRow(stock_code, trade_date);
             }
         }

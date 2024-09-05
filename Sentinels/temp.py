@@ -1,14 +1,9 @@
-from flask import Flask
-from flask_restful import Resource, Api
+import akshare as ak
 
-app = Flask(__name__)
-api = Api(app)
+stock_zh_a_daily_qfq_df = ak.stock_zh_a_daily(symbol="sz000001", start_date="19910403", adjust="qfq")
+print(stock_zh_a_daily_qfq_df)
 
-class HelloWorld(Resource):
-    def get(self):
-        return {'hello': 'world'}
+# import akshare as ak
 
-api.add_resource(HelloWorld, '/')
-
-if __name__ == '__main__':
-    app.run(debug=True)
+# stock_zh_a_hist_df = ak.stock_zh_a_hist(symbol="000001", period="daily", start_date="20170301", adjust="")
+# print(stock_zh_a_hist_df)

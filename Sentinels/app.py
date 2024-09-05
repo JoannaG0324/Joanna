@@ -79,7 +79,7 @@ def index():
                            use_level_2=use_level_2,
                            columns_order=columns_order)
 
-# 获取处理后的行业数据
+# Function: processed industry data
 def get_processed_score_industry_data(use_level_2):
     '''
     获取处理后的行业数据: 
@@ -142,7 +142,7 @@ def get_processed_score_industry_data(use_level_2):
     
     return df, columns_order
 
-# 更新数据  
+# update data
 @app.route('/update_data')
 def update_data():
     # 调用更新数据函数并获取消息列表
@@ -151,7 +151,7 @@ def update_data():
     # 返回所有消息
     return jsonify({'messages': messages})
 
-# 股票价格表
+# stock list: show stock list, all stock in this page, filter by industry level, index, stock name
 @app.route('/stock_list', methods=['GET'])
 def stock_list():
     '''
@@ -234,7 +234,7 @@ def stock_list():
                            industry_levels=industry_levels
                            )
 
-# 获取股票历史数据
+# get stock history
 @app.route('/get_stock_history')
 def get_stock_history():
     '''
@@ -267,13 +267,14 @@ def get_stock_history():
 
     return jsonify(result)
 
-# 添加股票到模拟交易持仓表
+# EV: add stock to portfolio
 @app.route('/add_to_portfolio', methods=['POST'])
 def add_to_portfolio():
     data = request.json
     date = data['date']
     code = data['code']
-    close = float(data['close'])
+    remark = data['remark']
+    close = float(data['close']) # buy price
     ATR = float(data['ATR'])
     quantity = int(data['quantity']) 
     loss1 = float(data['loss1'])     
@@ -285,15 +286,18 @@ def add_to_portfolio():
     try:
 
         engine.execute(f"""
-            INSERT INTO {PAPER_TRADING_TABLE_NAME} (date, stock_code, quantity, close, ATR, loss1, loss2, profit1, profit2, trade_date, is_position)
-            VALUES ('{date}', '{code}', {quantity}, {close}, {ATR}, {loss1}, {loss2}, {profit1}, {profit2}, '{trade_date}', 1)
+            INSERT INTO {PAPER_TRADING_TABLE_NAME} (date, stock_code, quantity, close, ATR, loss1, loss2, profit1, profit2, trade_date, is_position, sell_price, remark, update_time)
+            VALUES ('{date}', '{code}', {quantity}, {close}, {ATR}, {loss1}, {loss2}, {profit1}, {profit2}, '{trade_date}', 1, 0, '{remark}', NOW())
             ON DUPLICATE KEY UPDATE
+                close = VALUES(close),
                 quantity = VALUES(quantity),
                 ATR = VALUES(ATR),
                 loss1 = VALUES(loss1),
                 loss2 = VALUES(loss2),
                 profit1 = VALUES(profit1),
-                profit2 = VALUES(profit2)
+                profit2 = VALUES(profit2),
+                update_time = NOW(),
+                remark = VALUES(remark)
         """)
         
         return jsonify({"success": True})
@@ -308,7 +312,13 @@ def expected_value():
     显示 PAPER_TRADING 表的数据
     '''
     query = f"""
-    SELECT pt.*, sd.close AS latest_close, sd.date AS latest_date 
+    SELECT pt.*, 
+           CASE 
+               WHEN pt.is_position = 0 THEN pt.sell_price  -- 0: 已卖出，1: 持仓中
+               ELSE sd.close 
+           END AS latest_close,  
+           sd.date AS latest_date, 
+           si.stock_name
     FROM {PAPER_TRADING_TABLE_NAME} pt
     LEFT JOIN (
         SELECT SUBSTRING(stock_code, 3) AS stock_code, close, date
@@ -318,7 +328,8 @@ def expected_value():
             FROM {STOCK_DAILY_TABLE_NAME}
         )
     ) sd ON pt.stock_code = sd.stock_code
-    WHERE pt.is_position = 1
+    LEFT JOIN {STOCK_INFO_TABLE_NAME} si ON pt.stock_code = si.stock_code
+    WHERE pt.is_position IN (0, 1)
     """
     paper_trading_data = pd.read_sql(query, engine)
 
@@ -331,9 +342,36 @@ def expected_value():
     
     return render_template('expected_value.html', paper_trading_data=paper_trading_list)
 
+# EV: remove stock from portfolio
+@app.route('/remove_from_portfolio', methods=['POST'])
+def remove_from_portfolio():
+    '''
+    Remove stock from portfolio
+    '''
+    data = request.json
+    stock_code = data['stock_code']
+    trade_date = data['trade_date'] 
+    sell_price = data['latest_close']
+    remark = data['remark']
+
+    # update is_position to 0, sell_price to latest_close, update remark
+    try:
+        engine.execute(f"""
+            UPDATE {PAPER_TRADING_TABLE_NAME}
+            SET is_position = 0, sell_price = {sell_price}, remark = '{remark}'
+            WHERE stock_code = '{stock_code}' AND trade_date = '{trade_date}'
+        """)
+        
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
 # EV: delete position data
 @app.route('/delete_from_portfolio', methods=['POST'])
 def delete_from_portfolio():
+    '''
+    Delete position data
+    '''
     data = request.json
     stock_code = data['stock_code']
     trade_date = data['trade_date']

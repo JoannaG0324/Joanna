@@ -20,5 +20,4 @@ Page_2: 个股列表
 Page_3: 预期收益
 
   1-> ？交易策略的预期预期收益计算
-![image](https://github.com/user-attachments/assets/3c6993b1-510c-4af5-b07e-aaa049b35314)
 ![image](https://github.com/user-attachments/assets/e8c0ee03-765d-4160-a15b-a35f412c6503)

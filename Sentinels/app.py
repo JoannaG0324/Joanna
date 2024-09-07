@@ -330,6 +330,7 @@ def expected_value():
     ) sd ON pt.stock_code = sd.stock_code
     LEFT JOIN {STOCK_INFO_TABLE_NAME} si ON pt.stock_code = si.stock_code
     WHERE pt.is_position IN (0, 1)
+    ORDER BY pt.is_position DESC, pt.trade_date DESC
     """
     paper_trading_data = pd.read_sql(query, engine)
 
@@ -366,7 +367,43 @@ def remove_from_portfolio():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
+# 添加新的路由来处理编辑请求
+@app.route('/edit_portfolio', methods=['POST'])
+def edit_portfolio():
+    data = request.json
+    stock_code = data['stock_code']
+    trade_date = data['trade_date']
+    quantity = data['quantity']
+    close = float(data['close'])
+    atr = float(data['atr'])
+    loss1 = float(data['loss1'])
+    loss2 = float(data['loss2'])
+    profit1 = float(data['profit1'])
+    profit2 = float(data['profit2'])
+    remark = data['remark']
+
+    try:
+        # 更新数据库中的记录
+        engine.execute(f"""
+            UPDATE {PAPER_TRADING_TABLE_NAME}
+            SET quantity = {quantity},
+                close = {close},
+                ATR = {atr},
+                loss1 = {loss1},
+                loss2 = {loss2},
+                profit1 = {profit1},
+                profit2 = {profit2},
+                remark = '{remark}',
+                update_time = NOW()
+            WHERE stock_code = '{stock_code}' AND trade_date = '{trade_date}'
+        """)
+
+        return jsonify({"success": True, "message": "记录已成功更新"})
+    except Exception as e:
+        print(e)
+        return jsonify({"success": False, "message": str(e)}), 500
 # EV: delete position data
+
 @app.route('/delete_from_portfolio', methods=['POST'])
 def delete_from_portfolio():
     '''
@@ -390,7 +427,7 @@ def delete_from_portfolio():
 # 直接在主线程中运行 Flask 应用
 if __name__ == '__main__':
 #     app.run(port=5000)
-    app.run(host='0.0.0.0', port=8000)
+    app.run(host='127.0.0.1', port=8000)
 #     socketio.run(app)
 
 

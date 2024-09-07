@@ -2,12 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Expected Value</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>expected_value</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         /* 全局样式 */
         body {
@@ -50,7 +52,7 @@
 
         /* 表格样式 */
         table {
-            width: 70%;
+            width: 100%;
             border-collapse: collapse;
         }
         th, td {
@@ -82,19 +84,13 @@
         button:hover {
             background-color: #2980b9;
         }
-        .modal-header.sell-modal-header {
-            background-color: #f6f8f9;
-            color: white;
+        .modal-backdrop { 
+            z-index: 1040 !important;
         }
-        .sell-modal-close {
-            color: white;
+        .modal {
+            z-index: 1050 !important;
         }
-        .sell-modal-body .form-group {
-            margin-bottom: 1rem;
-        }
-        .sell-modal-footer {
-            justify-content: space-between;
-        }
+       
     </style>
 </head>
 <body>
@@ -136,13 +132,14 @@
                     <td style="text-align: right;">{{ "%.2f"|format(row.latest_close) }}</td>
                     <td style="background-color: {{ 'rgba(255, 0, 0, ' + ((row.latest_close / row.close - 1) * 10)|string + ')' if (row.latest_close / row.close - 1) > 0 else 'rgba(0, 128, 0, ' + (-(row.latest_close / row.close - 1) * 20)|string + ')' if (row.latest_close / row.close - 1) < 0 else 'white' }}; text-align: right;">{{ "{:.2f}%".format((row.latest_close / row.close - 1) * 100) }}</td>
                     <td>{{ row.remark }}</td>
-                    <td>
+                    <td style="white-space: nowrap;">
                         {% if row.is_position == 1 %}
-                            <button id ="button" onclick="showSellModal('{{ row.stock_code }}', '{{ row.trade_date }}', '{{ row.latest_close }}', '{{ row.remark }}')">Sell</button>
+                            <button id="button" onclick="showUpdateModal('{{ row.stock_code }}', '{{ row.stock_name }}', '{{ row.trade_date }}', '{{ row.quantity }}', '{{ row.close }}', '{{ row.ATR }}',  '{{ row.remark }}')" style="display: inline-block; margin-right: 5px; background-color: #ffa500;">编辑</button>
+                            <button id="button" onclick="showSellModal('{{ row.stock_code }}', '{{ row.trade_date }}', '{{ row.latest_close }}', '{{ row.remark }}')" style="display: inline-block; margin-right: 5px;">卖出</button>
                         {% else %}
-                            <button id ="button" disabled>...</button>
+                            <!-- <button id="button" disabled style="display: inline-block; margin-right: 5px;">...</button> -->
                         {% endif %}
-                        <button id="button" onclick="confirmDelete('{{ row.stock_code }}', '{{ row.trade_date }}')">Delete</button>
+                        <button id="button" onclick="confirmDelete('{{ row.stock_code }}', '{{ row.trade_date }}')" style="display: inline-block; background-color: red; color: white;">删除</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -157,32 +154,93 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="sellModalLabel">确认卖出</h5>
+                    <h5 class="modal-title" id="sellModal">Confirm </h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="关闭">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="modalStockCode">股票代码: </label>
+                        <label for="modalStockCode">Stock Code: </label>
                         <span id="modalStockCode"></span>
                     </div>
                     <div class="form-group">
-                        <label for="modalTradeDate">交易日期: </label>
+                        <label for="modalTradeDate">Trade Date: </label>
                         <span id="modalTradeDate"></span>
                     </div>
                     <div class="form-group">
-                        <label for="modalLatestClose">最新价格:</label>
+                        <label for="modalLatestClose">Latest Close:</label>
                         <input type="number" class="form-control" id="modalLatestClose" step="0.01">
                     </div>
                     <div class="form-group">
-                        <label for="modalRemark">备注:</label>
+                        <label for="modalRemark">Remark:</label>
                         <textarea class="form-control" id="modalRemark" rows="3"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" onclick="confirmSell()">确认卖出</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmSell()">Confirm Sell</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 更新投资组合的模态框 -->
+    <div class="modal fade" id="updatePortfolioModal" tabindex="-1" role="dialog" aria-labelledby="updatePortfolioModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="updatePortfolioModalLabel">Update Portfolio</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="关闭">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p>Date: <span id="update-modal-date"></span></p>
+                            <p>Code: <span id="update-modal-code"></span></p>
+                            <p>Name: <span id="update-modal-name"></span></p>
+                            <div class="form-group">
+                                <label for="update-remark">Remark:</label>
+                                <textarea class="form-control" id="update-remark" rows="10"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="update-close">Close:</label>
+                                <input type="number" class="form-control" id="update-modal-close" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="update-ATR">ATR:</label>
+                                <input type="number" class="form-control" id="update-modal-ATR" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label for="update-loss1">loss1:</label>
+                                <span id="update-modal-loss1" class="form-control-plaintext"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="update-loss2">loss2:</label>
+                                <span id="update-modal-loss2" class="form-control-plaintext"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="update-profit1">profit1:</label>
+                                 <span id="update-modal-profit1" class="form-control-plaintext"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="update-profit2">profit2:</label>
+                                <span id="update-modal-profit2" class="form-control-plaintext"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="update-quantity">Quantity:</label>
+                                <input type="number" class="form-control" id="update-quantity" min="100" value="1000">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirm-update">Confirm Update</button>
                 </div>
             </div>
         </div>
@@ -190,6 +248,92 @@
 
     <script>
         
+        // 显示更新模态框
+        function showUpdateModal(stock_code, stock_name, trade_date, quantity, close, atr, remark) {
+            // 填充模态框数据
+            document.getElementById('update-modal-code').textContent = stock_code;
+            document.getElementById('update-modal-name').textContent = stock_name;
+            document.getElementById('update-modal-date').textContent = trade_date;
+            document.getElementById('update-modal-close').value = close;
+            document.getElementById('update-modal-ATR').value = atr; 
+            document.getElementById('update-quantity').value = quantity;
+            document.getElementById('update-remark').value = remark;
+
+            // 计算并填充其他字段
+            updateCalculatedFields();
+
+            // 使用 Bootstrap 的 JavaScript API 显示模态框
+            var myModal = new bootstrap.Modal(document.getElementById('updatePortfolioModal'));
+            myModal.show();
+        }
+
+        // 更新按钮：实时计算字段
+        function updateCalculatedFields() {
+            const close = parseFloat(document.getElementById('update-modal-close').value);
+            const ATR = parseFloat(document.getElementById('update-modal-ATR').value);
+
+            if (!isNaN(close) && !isNaN(ATR)) {
+                document.getElementById('update-modal-loss1').textContent = (close - 2 * ATR).toFixed(2);
+                document.getElementById('update-modal-loss2').textContent = (close - 1.5 * ATR).toFixed(2);
+                document.getElementById('update-modal-profit1').textContent = (close + 1.5 * ATR).toFixed(2);
+                document.getElementById('update-modal-profit2').textContent = (close + 2 * ATR).toFixed(2);
+            }
+        }
+
+        // 在页面加载完成后立即调用updateCalculatedFields
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCalculatedFields();
+        });
+
+        // 绑定输入事件以实时更新计算字段
+        document.getElementById('update-modal-close').addEventListener('input', updateCalculatedFields);
+        document.getElementById('update-modal-ATR').addEventListener('input', updateCalculatedFields);
+
+        // 确认更新
+        document.getElementById('confirm-update').addEventListener('click', function() {
+            const stock_code = document.getElementById('update-modal-code').textContent;
+            const trade_date = document.getElementById('update-modal-date').textContent;
+            const close = parseFloat(document.getElementById('update-modal-close').value);
+            const ATR = parseFloat(document.getElementById('update-modal-ATR').value);
+            const quantity = parseInt(document.getElementById('update-quantity').value);
+            const remark = document.getElementById('update-remark').value;
+
+            // 发送更新请求到后端
+            fetch('/edit_portfolio', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    stock_code: stock_code,
+                    trade_date: trade_date,
+                    close: close,
+                    atr: ATR,
+                    quantity: quantity,
+                    remark: remark,
+                    loss1: parseFloat(document.getElementById('update-modal-loss1').textContent),
+                    loss2: parseFloat(document.getElementById('update-modal-loss2').textContent),
+                    profit1: parseFloat(document.getElementById('update-modal-profit1').textContent),
+                    profit2: parseFloat(document.getElementById('update-modal-profit2').textContent)
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('更新成功');
+                    location.reload(); // 刷新页面以显示更新后的数据
+                } else {
+                    alert('更新失败：' + data.message);
+                }
+                $('#updatePortfolioModal').modal('hide');
+            })
+            .catch((error) => {
+                console.error('错误:', error);
+                alert('更新过程中发生错误');
+            });
+        });
+
+
         // 显示卖出模态框
         function showSellModal(stock_code, trade_date, latest_close, remark) {
             currentStockCode = stock_code;
@@ -225,7 +369,7 @@
                 if (data.success) {
                     location.reload();
                 } else {
-                    alert('卖出失败：' + data.message);
+                    alert('Fail：' + data.message);
                 }
             });
         }
@@ -254,7 +398,6 @@
                 }
             });
         }
-
 
     </script>
 </body>

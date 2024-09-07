@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>expected_value</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* 全局样式 */
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background-color: #f8f8f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 导航栏样式 */
+        nav {
+            background-color: #2c3e50;
+            padding: 10px 0;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        nav a {
+            margin: 0 15px;
+            text-decoration: none;
+            color: #ecf0f1;
+            font-weight: bold;
+            transition: color 0.2s ease;
+        }
+        nav a:hover {
+            color: #3498db;
+        }
+
+        /* 表格容器样式 */
+        .table-container {
+            width: 100%;
+            max-height: 70vh;
+            overflow-y: auto;
+            margin: 15px auto;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.08);
+            border-radius: 6px;
+        }
+
+        /* 表格样式 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 6px;
+            text-align: left;
+        }
+        th {
+            background-color: #f0f0f0;
+            color: #333;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+            cursor: pointer;
+        }
+        button {
+            padding: 6px 10px;
+            border: none;
+            background-color: #3498db;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .modal-backdrop { 
+            z-index: 1040 !important;
+        }
+        .modal {
+            z-index: 1050 !important;
+        }
+       
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+    {% if paper_trading_data %}
+        <h1>Expected Value (latest_date: {{ paper_trading_data[0].latest_date }})</h1>
+        <table id="table-container">
+            <thead>
+                <tr>
+                    <th>Trade Date</th>
+                    <th>Stock Code</th>
+                    <th>Stock Name</th>
+                    <th>Quantity</th>
+                    <th>Cost</th>
+                    <th>ATR</th>
+                    <th>Loss1</th>
+                    <th>Loss2</th>
+                    <th>Profit1</th>
+                    <th>Profit2</th>
+                    <th>Price</th>
+                    <th>%Change</th>
+                    <th>remark</th>
+                    <th>Operation</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in paper_trading_data %}
+                <tr>
+                    <td>{{ row.trade_date }}</td>
+                    <td>{{ row.stock_code }}</td>
+                    <td>{{ row.stock_name }}</td>
+                    <td style="text-align: right;">{{ row.quantity }}</td>
+                    <td style="text-align: right;">{{ "%.2f"|format(row.close) }}</td>
+                    <td style="text-align: right;">{{ "%.2f"|format(row.ATR) }}</td>
+                    <td style="text-align: right; background-color: {{ 'rgba(0, 128, 0, 0.3)' if row.latest_close < row.loss1 else 'transparent' }};">{{ "%.2f"|format(row.loss1) }} ({{ "{:.2f}%".format((row.loss1 / row.close - 1) * 100) }})</td>
+                    <td style="text-align: right; background-color: {{ 'rgba(0, 128, 0, 0.3)' if row.latest_close < row.loss2 else 'transparent' }};">{{ "%.2f"|format(row.loss2) }} ({{ "{:.2f}%".format((row.loss2 / row.close - 1) * 100) }})</td>
+                    <td style="text-align: right; background-color: {{ 'rgba(255, 0, 0, 0.3)' if row.latest_close >= row.profit1 else 'transparent' }};">{{ "%.2f"|format(row.profit1) }} ({{ "{:.2f}%".format((row.profit1 / row.close - 1) * 100) }})</td>
+                    <td style="text-align: right; background-color: {{ 'rgba(255, 0, 0, 0.3)' if row.latest_close >= row.profit2 else 'transparent' }};">{{ "%.2f"|format(row.profit2) }} ({{ "{:.2f}%".format((row.profit2 / row.close - 1) * 100) }})</td>
+                    <td style="text-align: right;">{{ "%.2f"|format(row.latest_close) }}</td>
+                    <td style="background-color: {{ 'rgba(255, 0, 0, ' + ((row.latest_close / row.close - 1) * 10)|string + ')' if (row.latest_close / row.close - 1) > 0 else 'rgba(0, 128, 0, ' + (-(row.latest_close / row.close - 1) * 20)|string + ')' if (row.latest_close / row.close - 1) < 0 else 'white' }}; text-align: right;">{{ "{:.2f}%".format((row.latest_close / row.close - 1) * 100) }}</td>
+                    <td>{{ row.remark }}</td>
+                    <td style="white-space: nowrap;">
+                        {% if row.is_position == 1 %}
+                            <button id="button" onclick="showUpdateModal('{{ row.stock_code }}', '{{ row.stock_name }}', '{{ row.trade_date }}', '{{ row.quantity }}', '{{ row.close }}', '{{ row.ATR }}',  '{{ row.remark }}')" style="display: inline-block; margin-right: 5px; background-color: #ffa500;">编辑</button>
+                            <button id="button" onclick="showSellModal('{{ row.stock_code }}', '{{ row.trade_date }}', '{{ row.latest_close }}', '{{ row.remark }}')" style="display: inline-block; margin-right: 5px;">卖出</button>
+                        {% else %}
+                            <!-- <button id="button" disabled style="display: inline-block; margin-right: 5px;">...</button> -->
+                        {% endif %}
+                        <button id="button" onclick="confirmDelete('{{ row.stock_code }}', '{{ row.trade_date }}')" style="display: inline-block; background-color: red; color: white;">删除</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <h1>No data available</h1>
+    {% endif %}
+
+    <!-- sell modal -->
+    <div class="modal fade" id="sellModal" tabindex="-1" role="dialog" aria-labelledby="sellModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sellModal">Confirm </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="关闭">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="modalStockCode">Stock Code: </label>
+                        <span id="modalStockCode"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="modalTradeDate">Trade Date: </label>
+                        <span id="modalTradeDate"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="modalLatestClose">Latest Close:</label>
+                        <input type="number" class="form-control" id="modalLatestClose" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="modalRemark">Remark:</label>
+                        <textarea class="form-control" id="modalRemark" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmSell()">Confirm Sell</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 更新投资组合的模态框 -->
+    <div class="modal fade" id="updatePortfolioModal" tabindex="-1" role="dialog" aria-labelledby="updatePortfolioModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="updatePortfolioModalLabel">Update Portfolio</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="关闭">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p>Date: <span id="update-modal-date"></span></p>
+                            <p>Code: <span id="update-modal-code"></span></p>
+                            <p>Name: <span id="update-modal-name"></span></p>
+                            <div class="form-group">
+                                <label for="update-remark">Remark:</label>
+                                <textarea class="form-control" id="update-remark" rows="10"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="update-close">Close:</label>
+                                <input type="number" class="form-control" id="update-modal-close" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="update-ATR">ATR:</label>
+                                <input type="number" class="form-control" id="update-modal-ATR" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label for="update-loss1">loss1:</label>
+                                <span id="update-modal-loss1" class="form-control-plaintext"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="update-loss2">loss2:</label>
+                                <span id="update-modal-loss2" class="form-control-plaintext"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="update-profit1">profit1:</label>
+                                 <span id="update-modal-profit1" class="form-control-plaintext"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="update-profit2">profit2:</label>
+                                <span id="update-modal-profit2" class="form-control-plaintext"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="update-quantity">Quantity:</label>
+                                <input type="number" class="form-control" id="update-quantity" min="100" value="1000">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirm-update">Confirm Update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        
+        // 显示更新模态框
+        function showUpdateModal(stock_code, stock_name, trade_date, quantity, close, atr, remark) {
+            // 填充模态框数据
+            document.getElementById('update-modal-code').textContent = stock_code;
+            document.getElementById('update-modal-name').textContent = stock_name;
+            document.getElementById('update-modal-date').textContent = trade_date;
+            document.getElementById('update-modal-close').value = close;
+            document.getElementById('update-modal-ATR').value = atr; 
+            document.getElementById('update-quantity').value = quantity;
+            document.getElementById('update-remark').value = remark;
+
+            // 计算并填充其他字段
+            updateCalculatedFields();
+
+            // 使用 Bootstrap 的 JavaScript API 显示模态框
+            var myModal = new bootstrap.Modal(document.getElementById('updatePortfolioModal'));
+            myModal.show();
+        }
+
+        // 更新按钮：实时计算字段
+        function updateCalculatedFields() {
+            const close = parseFloat(document.getElementById('update-modal-close').value);
+            const ATR = parseFloat(document.getElementById('update-modal-ATR').value);
+
+            if (!isNaN(close) && !isNaN(ATR)) {
+                document.getElementById('update-modal-loss1').textContent = (close - 2 * ATR).toFixed(2);
+                document.getElementById('update-modal-loss2').textContent = (close - 1.5 * ATR).toFixed(2);
+                document.getElementById('update-modal-profit1').textContent = (close + 1.5 * ATR).toFixed(2);
+                document.getElementById('update-modal-profit2').textContent = (close + 2 * ATR).toFixed(2);
+            }
+        }
+
+        // 在页面加载完成后立即调用updateCalculatedFields
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCalculatedFields();
+        });
+
+        // 绑定输入事件以实时更新计算字段
+        document.getElementById('update-modal-close').addEventListener('input', updateCalculatedFields);
+        document.getElementById('update-modal-ATR').addEventListener('input', updateCalculatedFields);
+
+        // 确认更新
+        document.getElementById('confirm-update').addEventListener('click', function() {
+            const stock_code = document.getElementById('update-modal-code').textContent;
+            const trade_date = document.getElementById('update-modal-date').textContent;
+            const close = parseFloat(document.getElementById('update-modal-close').value);
+            const ATR = parseFloat(document.getElementById('update-modal-ATR').value);
+            const quantity = parseInt(document.getElementById('update-quantity').value);
+            const remark = document.getElementById('update-remark').value;
+
+            // 发送更新请求到后端
+            fetch('/edit_portfolio', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    stock_code: stock_code,
+                    trade_date: trade_date,
+                    close: close,
+                    atr: ATR,
+                    quantity: quantity,
+                    remark: remark,
+                    loss1: parseFloat(document.getElementById('update-modal-loss1').textContent),
+                    loss2: parseFloat(document.getElementById('update-modal-loss2').textContent),
+                    profit1: parseFloat(document.getElementById('update-modal-profit1').textContent),
+                    profit2: parseFloat(document.getElementById('update-modal-profit2').textContent)
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('更新成功');
+                    location.reload(); // 刷新页面以显示更新后的数据
+                } else {
+                    alert('更新失败：' + data.message);
+                }
+                $('#updatePortfolioModal').modal('hide');
+            })
+            .catch((error) => {
+                console.error('错误:', error);
+                alert('更新过程中发生错误');
+            });
+        });
+
+
+        // 显示卖出模态框
+        function showSellModal(stock_code, trade_date, latest_close, remark) {
+            currentStockCode = stock_code;
+            currentTradeDate = trade_date;
+            currentLatestClose = latest_close;
+            currentRemark = remark || ''; // 如果 remark 为 undefined，则设置为空字符串
+            document.getElementById('modalStockCode').textContent = stock_code;
+            document.getElementById('modalTradeDate').textContent = trade_date;
+            document.getElementById('modalLatestClose').value = latest_close;
+            document.getElementById('modalRemark').value = remark;
+
+            $('#sellModal').modal('show');
+        }
+
+        // 确认卖出
+        function confirmSell() {
+            const latestClose = document.getElementById('modalLatestClose').value;
+            const updatedRemark = document.getElementById('modalRemark').value; // 获取更新后的备注
+            sellRow(currentStockCode, currentTradeDate, latestClose, updatedRemark);
+        }
+
+        // 执行卖出操作
+        function sellRow(stock_code, trade_date, latest_close, remark) {
+            fetch('/remove_from_portfolio', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ stock_code: stock_code, trade_date: trade_date, latest_close: latest_close, remark: remark })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Fail：' + data.message);
+                }
+            });
+        }
+
+        // delete postion data: confirm
+        function confirmDelete(stock_code, trade_date) {
+            if (confirm('Delete this record?')) {
+                deleteRow(stock_code, trade_date);
+            }
+        }
+        // delete postion data
+        function deleteRow(stock_code, trade_date) {
+            fetch('/delete_from_portfolio', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ stock_code: stock_code, trade_date: trade_date })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Delete failed: ' + data.message);
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
